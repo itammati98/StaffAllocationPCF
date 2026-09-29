@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <!--
+    Time & fees allocation grid.
+
+    Replaces the canvas app container that showed colPeopleAllocated against colWorkstreamTimeline
+    with colAllocatedHours as the editable bookings. The three collections are bound as datasets;
+    the component publishes every change back to the app through the Changes / ChangesJson outputs.
+  -->
+  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.2.1"
+           display-name-key="TimeFeesGrid_Display" description-key="TimeFeesGrid_Desc"
+           control-type="virtual">
+
+    <external-service-usage enabled="false" />
+
+    <!--
+      Canvas apps populate a dataset property by NAME: each property-set below is matched against a
+      column of the bound table with the same name, and a name with no match delivers nothing. So
+      these names must be the collection's column names, and Dataverse additionally requires every
+      property-set name to be unique across the whole control - which is why the allocations table
+      exposes PersonName / AllocationDate (bind AddColumns(colAllocatedHours, PersonName, Name,
+      AllocationDate, Date)) instead of the Name / Date it shares with the other two collections.
+    -->
+
+    <!-- colPeopleAllocated -->
+    <data-set name="gridPeople" display-name-key="GridPeople_Display" description-key="GridPeople_Desc">
+      <property-set name="Name" display-name-key="PS_PersonName" of-type="SingleLine.Text" usage="input" />
+      <property-set name="JobLevel" display-name-key="PS_JobLevel" of-type="SingleLine.Text" usage="input" />
+      <property-set name="Team" display-name-key="PS_Team" of-type="SingleLine.Text" usage="input" />
+      <property-set name="CostRate" display-name-key="PS_CostRate" of-type="Decimal" usage="input" />
+      <property-set name="FeeRate" display-name-key="PS_FeeRate" of-type="Decimal" usage="input" />
+      <property-set name="RPH" display-name-key="PS_RPH" of-type="Decimal" usage="input" />
+      <property-set name="Realisation" display-name-key="PS_Realisation" of-type="Decimal" usage="input" />
+      <property-set name="JobLevelOrder" display-name-key="PS_JobLevelOrder" of-type="Whole.None" usage="input" />
+      <property-set name="IsToBeAdded" display-name-key="PS_IsToBeAdded" of-type="TwoOptions" usage="input" />
+      <property-set name="CurrencyID" display-name-key="PS_CurrencyId" of-type="SingleLine.Text" usage="input" />
+    </data-set>
+
+    <!-- colAllocatedHours: only the booked hours are read; the period fields the component writes
+         back (Value, Weekday, WeekNum, MonthNum, YearNum) are derived from the timeline. -->
+    <data-set name="gridAllocations" display-name-key="GridAllocations_Display" description-key="GridAllocations_Desc">
+      <property-set name="PersonName" display-name-key="PS_AllocationPersonName" of-type="SingleLine.Text" usage="input" />
+      <property-set name="AllocationDate" display-name-key="PS_AllocationDate" of-type="DateAndTime.DateOnly" usage="input" />
+      <property-set name="HoursWorked" display-name-key="PS_HoursWorked" of-type="Decimal" usage="input" />
+    </data-set>
+
+    <!-- colWorkstreamTimeline; optional, a Monday to Friday timeline is generated without it -->
+    <data-set name="gridTimeline" display-name-key="GridTimeline_Display" description-key="GridTimeline_Desc">
+      <property-set name="Date" display-name-key="PS_Date" of-type="DateAndTime.DateOnly" usage="input" />
+      <property-set name="Value" display-name-key="PS_Value" of-type="Whole.None" usage="input" />
+      <property-set name="Weekday" display-name-key="PS_Weekday" of-type="Whole.None" usage="input" />
+      <property-set name="WeekNum" display-name-key="PS_WeekNum" of-type="Whole.None" usage="input" />
+      <property-set name="MonthNum" display-name-key="PS_MonthNum" of-type="Whole.None" usage="input" />
+      <property-set name="YearNum" display-name-key="PS_YearNum" of-type="Whole.None" usage="input" />
+    </data-set>
+
+    <!-- Workstream window, used for the generated timeline and the column labels -->
+    <property name="workstreamStart" display-name-key="WorkstreamStart_Display" description-key="WorkstreamStart_Desc"
+              of-type="DateAndTime.DateOnly" usage="input" default-value="2026-01-05" />
+    <property name="numberOfWeeks" display-name-key="NumberOfWeeks_Display" description-key="NumberOfWeeks_Desc"
+              of-type="Whole.None" usage="input" default-value="6" />
+    <property name="hoursPerDay" display-name-key="HoursPerDay_Display" description-key="HoursPerDay_Desc"
+              of-type="Decimal" usage="input" default-value="8" />
+
+    <!-- View options -->
+    <property name="phasing" display-name-key="Phasing_Display" description-key="Phasing_Desc"
+              of-type="Enum" usage="input" default-value="weekly">
+      <value name="Daily" display-name-key="Phasing_Daily">daily</value>
+      <value name="Weekly" display-name-key="Phasing_Weekly">weekly</value>
+      <value name="Monthly" display-name-key="Phasing_Monthly">monthly</value>
+    </property>
+    <!-- Pricing mode is driven by the app; the grid only changes which rate is editable -->
+    <property name="pricingMethod" display-name-key="Pricing_Display" description-key="Pricing_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="manualRate" />
+    <property name="readOnly" display-name-key="ReadOnly_Display" description-key="ReadOnly_Desc"
+              of-type="TwoOptions" usage="input" default-value="false" />
+    <property name="showNotifications" display-name-key="ShowNotifications_Display" description-key="ShowNotifications_Desc"
+              of-type="TwoOptions" usage="input" default-value="true" />
+
+    <!-- Raised when the user asks the app to add or to remove a person -->
+    <!-- (Custom events are a preview authoring feature and were removed for stability; the grid
+         publishes addStaffRequested / removePersonRequested through the Changes output instead.) -->
+
+    <!-- Schema carrier for the object output, read by canvas apps -->
+    <property name="dataSchema" display-name-key="DataSchema_Display" description-key="DataSchema_Desc"
+              of-type="SingleLine.Text" usage="input" hidden="true" />
+
+    <!-- Changes published to the app -->
+    <property name="changes" display-name-key="Changes_Display" description-key="Changes_Desc"
+              of-type="Object" usage="output" hidden="false" default-value="" />
+    <property name="changesJson" display-name-key="ChangesJson_Display" description-key="ChangesJson_Desc"
+              of-type="SingleLine.Text" usage="output" />
+
+    <property-dependencies>
+      <property-dependency input="dataSchema" output="changes" required-for="schema" />
+    </property-dependencies>
+
+    <resources>
+      <code path="index.ts" order="1" />
+      <css path="css/grid.css" order="1" />
+      <platform-library name="React" version="16.14.0" />
+      <resx path="strings/TimeFeesGrid.1033.resx" version="1.0.0" />
+    </resources>
+  </control>
+</manifest>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="TimeFeesGrid_Display" xml:space="preserve">
+    <value>Time &amp; fees grid</value>
+  </data>
+  <data name="TimeFeesGrid_Desc" xml:space="preserve">
+    <value>Editable grid of people against a workstream timeline: books hours per day, week or month, and shows rates, time fees and margin. Keyboard navigable, scrolls with the native scrollbars.</value>
+  </data>
+
+  <data name="GridPeople_Display" xml:space="preserve">
+    <value>People (colPeopleAllocated)</value>
+  </data>
+  <data name="GridPeople_Desc" xml:space="preserve">
+    <value>Bind colPeopleAllocated: Name, JobLevel, Team, CostRate, FeeRate, RPH, Realisation, JobLevelOrder, IsToBeAdded, CurrencyID. One row per person that can be allocated.</value>
+  </data>
+  <data name="GridAllocations_Display" xml:space="preserve">
+    <value>Booked hours (colAllocatedHours)</value>
+  </data>
+  <data name="GridAllocations_Desc" xml:space="preserve">
+    <value>The grid reads this table's columns by name, so the bound table must expose PersonName and AllocationDate (the component cannot reuse Name and Date because every column name has to be unique across the control). Bind: AddColumns(colAllocatedHours, PersonName, Name, AllocationDate, Date). Rows dated outside the workstream window keep their hours and date, and come back with Value, Weekday and WeekNum set to 0 because the window no longer describes them.</value>
+  </data>
+  <data name="GridTimeline_Display" xml:space="preserve">
+    <value>Timeline (colWorkstreamTimeline)</value>
+  </data>
+  <data name="GridTimeline_Desc" xml:space="preserve">
+    <value>Optional. Bind colWorkstreamTimeline as it is: its Date, Value, Weekday, WeekNum, MonthNum and YearNum columns are read by name. Leave it unbound to generate a Monday to Friday timeline from the workstream start date and number of weeks.</value>
+  </data>
+
+  <data name="PS_PersonName" xml:space="preserve"><value>Name (colPeopleAllocated)</value></data>
+  <data name="PS_JobLevel" xml:space="preserve"><value>Job level</value></data>
+  <data name="PS_Team" xml:space="preserve"><value>Team</value></data>
+  <data name="PS_CostRate" xml:space="preserve"><value>Cost rate</value></data>
+  <data name="PS_FeeRate" xml:space="preserve"><value>Fee rate (standard rate)</value></data>
+  <data name="PS_RPH" xml:space="preserve"><value>RPH (rate per hour)</value></data>
+  <data name="PS_Realisation" xml:space="preserve"><value>Realisation</value></data>
+  <data name="PS_JobLevelOrder" xml:space="preserve"><value>Job level order</value></data>
+  <data name="PS_IsToBeAdded" xml:space="preserve"><value>Is to be added</value></data>
+  <data name="PS_CurrencyId" xml:space="preserve"><value>Currency</value></data>
+  <data name="PS_AllocationPersonName" xml:space="preserve"><value>Person name (colAllocatedHours.Name)</value></data>
+  <data name="PS_AllocationDate" xml:space="preserve"><value>Booking date (colAllocatedHours.Date)</value></data>
+  <data name="PS_Date" xml:space="preserve"><value>Date</value></data>
+  <data name="PS_HoursWorked" xml:space="preserve"><value>Hours worked</value></data>
+  <data name="PS_Value" xml:space="preserve"><value>Value (working day number)</value></data>
+  <data name="PS_Weekday" xml:space="preserve"><value>Weekday (1 = Monday, 7 = Sunday)</value></data>
+  <data name="PS_WeekNum" xml:space="preserve"><value>Week number</value></data>
+  <data name="PS_MonthNum" xml:space="preserve"><value>Month number</value></data>
+  <data name="PS_YearNum" xml:space="preserve"><value>Year</value></data>
+
+  <data name="WorkstreamStart_Display" xml:space="preserve"><value>Workstream start</value></data>
+  <data name="WorkstreamStart_Desc" xml:space="preserve">
+    <value>First day of the workstream. Used to generate the timeline when the timeline table is not bound, and for the period labels.</value>
+  </data>
+  <data name="NumberOfWeeks_Display" xml:space="preserve"><value>Number of weeks</value></data>
+  <data name="NumberOfWeeks_Desc" xml:space="preserve">
+    <value>Length of the workstream in weeks (1-52). Each week counts five working days from the workstream start.</value>
+  </data>
+  <data name="HoursPerDay_Display" xml:space="preserve"><value>Hours per working day</value></data>
+  <data name="HoursPerDay_Desc" xml:space="preserve">
+    <value>Hours a full working day holds (default 8). Hours booked in a period are spread day by day at this size, and the period capacity is working days x this value.</value>
+  </data>
+  <data name="Phasing_Display" xml:space="preserve"><value>Phasing</value></data>
+  <data name="Phasing_Desc" xml:space="preserve"><value>Default grouping of the timeline columns. People using the grid can switch between daily, weekly and monthly.</value></data>
+  <data name="Phasing_Daily" xml:space="preserve"><value>Daily</value></data>
+  <data name="Phasing_Weekly" xml:space="preserve"><value>Weekly</value></data>
+  <data name="Phasing_Monthly" xml:space="preserve"><value>Monthly</value></data>
+  <data name="Pricing_Display" xml:space="preserve"><value>Pricing mode</value></data>
+  <data name="Pricing_Desc" xml:space="preserve">
+    <value>The app owns this: set it from your pricing control. Use "realisationAdjustment" (any text containing "realisation") to let the user type REAL% and derive RPH, or "manualRate" to let them type RPH and derive the realisation.</value>
+  </data>
+  <data name="ReadOnly_Display" xml:space="preserve"><value>Read only</value></data>
+  <data name="ReadOnly_Desc" xml:space="preserve"><value>Turn on for review screens: rates and hours cannot be edited, but the grid can still be navigated and re-phased.</value></data>
+  <data name="ShowNotifications_Display" xml:space="preserve"><value>Show notifications</value></data>
+  <data name="ShowNotifications_Desc" xml:space="preserve">
+    <value>Turn on to show the dataset warnings above the timeline (for example when an optional table is not bound). Turn off to keep the grid silent.</value>
+  </data>
+  <data name="DataSchema_Display" xml:space="preserve"><value>Changes schema</value></data>
+  <data name="DataSchema_Desc" xml:space="preserve"><value>Internal: carries the output schema for canvas apps.</value></data>
+  <data name="Changes_Display" xml:space="preserve"><value>Changes</value></data>
+  <data name="Changes_Desc" xml:space="preserve">
+    <value>Latest change published by the grid: revision, action, personName, the allocations table and the people table. Write these back to colAllocatedHours and colPeopleAllocated to save.</value>
+  </data>
+  <data name="ChangesJson_Display" xml:space="preserve"><value>Changes (JSON)</value></data>
+  <data name="ChangesJson_Desc" xml:space="preserve"><value>Same payload as the Changes property, serialised, for apps that prefer to parse JSON.</value></data>
+</root>

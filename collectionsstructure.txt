@@ -1,0 +1,33 @@
+ colPeopleAllocated
+{
+"IsToBeAdded": boolean,
+"JobLevelOrder": number,
+"RPH": number,
+"Realisation": number,
+"[CostRate]": number,
+"[CurrencyID]": text,
+"[FeeRate]": number,
+"[JobLevel]": text,
+"[Name]": text,
+"[Team]": text
+}
+colAllocatedHours
+{
+"Date": date,
+"HoursWorked": number,
+"MonthNum": number,
+"Name": text,
+"Value": number,
+"WeekNum": number,
+"Weekday": number,
+"YearNum": number
+}
+colWorkstreamTimeline
+{
+"Date": date,
+"MonthNum": number,
+"Value": number,
+"WeekNum": number,
+"Weekday": number,
+"YearNum": number
+}

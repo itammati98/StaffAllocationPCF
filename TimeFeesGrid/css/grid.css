@@ -1,0 +1,807 @@
+/*
+ * Time & fees allocation grid.
+ *
+ * Everything is scoped under .tfg-root because the host injects this file into the app document.
+ * Layout: a flex column — toolbar, status, grid viewport, hint. The grid viewport is the only
+ * scrolling element: native overflow scrolling with a visible scrollbar replaces the canvas app's
+ * horizontal slider, and the person column, header row and totals row stay pinned.
+ */
+
+.tfg-root {
+  --tfg-bg: #ffffff;
+  --tfg-bg-subtle: #faf9f8;
+  --tfg-bg-head: #f3f2f1;
+  --tfg-bg-foot: #f3f2f1;
+  --tfg-hover: #f8f8f7;
+  --tfg-text: #201f1e;
+  --tfg-text-muted: #605e5c;
+  --tfg-text-soft: #8a8886;
+  --tfg-border: #edebe9;
+  --tfg-border-strong: #d2d0ce;
+  --tfg-accent: #0f6cbd;
+  --tfg-accent-soft: #eff6fc;
+  --tfg-active-row: #f3f9fd;
+  --tfg-warn-bg: #fff8e1;
+  --tfg-warn-text: #8a6116;
+  --tfg-danger: #a4262c;
+  --tfg-radius: 4px;
+  --tfg-row-h: 40px;
+  --tfg-head-h: 34px;
+  --tfg-foot-h: 34px;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--tfg-bg);
+  color: var(--tfg-text);
+  font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.tfg-root *,
+.tfg-root *::before,
+.tfg-root *::after {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+.tfg-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--tfg-bg-subtle);
+  border-bottom: 1px solid var(--tfg-border);
+}
+
+.tfg-toolbar__titles {
+  display: flex;
+  flex-direction: column;
+  margin-right: 4px;
+  min-width: 0;
+}
+
+.tfg-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tfg-text);
+  white-space: nowrap;
+}
+
+.tfg-subtitle {
+  font-size: 10.5px;
+  color: var(--tfg-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tfg-toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+.tfg-segmented {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--tfg-border-strong);
+  border-radius: var(--tfg-radius);
+  background: var(--tfg-bg);
+}
+
+.tfg-seg {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--tfg-text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tfg-seg:hover {
+  background: var(--tfg-bg-subtle);
+  color: var(--tfg-text);
+}
+
+.tfg-seg[aria-checked="true"] {
+  background: var(--tfg-accent-soft);
+  color: var(--tfg-accent);
+  box-shadow: inset 0 0 0 1px rgba(15, 108, 189, 0.35);
+}
+
+.tfg-seg:focus-visible,
+.tfg-btn:focus-visible,
+.tfg-iconbtn:focus-visible,
+.tfg-select:focus-visible {
+  outline: 2px solid var(--tfg-accent);
+  outline-offset: 1px;
+}
+
+.tfg-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tfg-field__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--tfg-text-muted);
+  white-space: nowrap;
+}
+
+.tfg-select {
+  height: 26px;
+  max-width: 190px;
+  padding: 0 6px;
+  border: 1px solid var(--tfg-border-strong);
+  border-radius: var(--tfg-radius);
+  background: var(--tfg-bg);
+  color: var(--tfg-text);
+  font: inherit;
+  font-size: 11.5px;
+}
+
+.tfg-select:disabled {
+  background: var(--tfg-bg-head);
+  color: var(--tfg-text-muted);
+}
+
+.tfg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--tfg-border-strong);
+  border-radius: var(--tfg-radius);
+  background: var(--tfg-bg);
+  color: var(--tfg-text);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tfg-btn:hover:not(:disabled) {
+  background: var(--tfg-bg-subtle);
+  border-color: var(--tfg-text-soft);
+}
+
+.tfg-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tfg-btn--primary {
+  background: var(--tfg-accent);
+  border-color: var(--tfg-accent);
+  color: #ffffff;
+}
+
+.tfg-btn--primary:hover:not(:disabled) {
+  background: #0d5ea5;
+  border-color: #0d5ea5;
+}
+
+.tfg-btn--small {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.tfg-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--tfg-radius);
+  background: transparent;
+  color: var(--tfg-text-muted);
+  cursor: pointer;
+}
+
+.tfg-iconbtn:hover:not(:disabled) {
+  background: var(--tfg-bg-head);
+  color: var(--tfg-text);
+}
+
+.tfg-iconbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tfg-iconbtn--small {
+  width: 20px;
+  height: 20px;
+}
+
+.tfg-iconbtn--danger:hover:not(:disabled) {
+  background: #fdf3f4;
+  color: var(--tfg-danger);
+}
+
+.tfg-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--tfg-bg-head);
+  color: var(--tfg-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.tfg-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------- status & notes */
+
+.tfg-status {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--tfg-border);
+  background: var(--tfg-accent-soft);
+  color: #0b4f8a;
+}
+
+.tfg-status--warning {
+  background: var(--tfg-warn-bg);
+  color: var(--tfg-warn-text);
+}
+
+.tfg-status__text {
+  flex: 1 1 auto;
+}
+
+.tfg-banner {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--tfg-border);
+  list-style-position: inside;
+}
+
+.tfg-banner--warning {
+  background: var(--tfg-warn-bg);
+  color: var(--tfg-warn-text);
+}
+
+.tfg-banner--error {
+  background: #fdf3f4;
+  color: var(--tfg-danger);
+}
+
+.tfg-placeholder {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--tfg-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------- help */
+
+.tfg-help {
+  flex: 0 0 auto;
+  max-height: 55%;
+  overflow: auto;
+  padding: 10px 12px 12px;
+  background: var(--tfg-bg-subtle);
+  border-bottom: 1px solid var(--tfg-border);
+}
+
+.tfg-help__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tfg-help__title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.tfg-help__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px 20px;
+}
+
+.tfg-help__heading {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--tfg-text-muted);
+}
+
+.tfg-help__list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 10px;
+  margin: 0;
+  font-size: 11.5px;
+}
+
+.tfg-help__list dt {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tfg-help__list dd {
+  margin: 0;
+  color: var(--tfg-text-muted);
+}
+
+/* -------------------------------------------------------- grid & scrolling */
+
+.tfg-gridwrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--tfg-bg);
+
+  /* Native scrollbars, sized and coloured so they read as part of the grid. */
+  scrollbar-width: thin;
+  scrollbar-color: #c8c6c4 transparent;
+}
+
+.tfg-gridwrap::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.tfg-gridwrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tfg-gridwrap::-webkit-scrollbar-thumb {
+  background: #c8c6c4;
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 8px;
+}
+
+.tfg-gridwrap::-webkit-scrollbar-thumb:hover {
+  background: #a19f9d;
+  background-clip: padding-box;
+}
+
+.tfg-gridwrap::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.tfg-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+.tfg-root[data-density="narrow"] .tfg-table {
+  font-size: 11px;
+}
+
+.tfg-table:focus {
+  outline: none;
+}
+
+/* ---------------------------------------------------------------- headers */
+
+.tfg-th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: var(--tfg-head-h);
+  padding: 0 6px;
+  background: var(--tfg-bg-head);
+  border-bottom: 1px solid var(--tfg-border-strong);
+  border-right: 1px solid var(--tfg-border);
+  color: var(--tfg-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.tfg-th__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.tfg-th--identity .tfg-th__stack,
+.tfg-th--identity {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.tfg-th--period .tfg-th__label {
+  font-size: 10px;
+  color: var(--tfg-text);
+}
+
+.tfg-th__sub {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--tfg-text-soft);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ------------------------------------------------------------------- body */
+
+.tfg-td {
+  height: var(--tfg-row-h);
+  padding: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--tfg-border);
+  border-right: 1px solid var(--tfg-border);
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.tfg-table tbody tr {
+  background: var(--tfg-bg);
+}
+
+.tfg-table tbody tr:hover {
+  background: var(--tfg-hover);
+}
+
+.tfg-table tbody tr[data-active] {
+  background: var(--tfg-active-row);
+}
+
+.tfg-value {
+  display: block;
+  padding: 0 6px;
+  line-height: calc(var(--tfg-row-h) - 1px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tfg-align--end {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tfg-align--start {
+  text-align: left;
+}
+
+.tfg-td--period[data-empty] .tfg-value {
+  color: var(--tfg-text-soft);
+}
+
+.tfg-td[data-over],
+.tfg-tf[data-over] {
+  background: var(--tfg-warn-bg);
+  color: var(--tfg-warn-text);
+  font-weight: 600;
+}
+
+.tfg-td[data-locked] {
+  color: var(--tfg-text-muted);
+}
+
+/* Person column and the pinned totals columns. */
+.tfg-sticky-left {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--tfg-bg);
+  border-right: 1px solid var(--tfg-border-strong);
+}
+
+.tfg-sticky-right {
+  position: sticky;
+  z-index: 3;
+  background: var(--tfg-bg);
+  border-left: 1px solid var(--tfg-border-strong);
+}
+
+.tfg-table tbody tr:hover .tfg-sticky-left,
+.tfg-table tbody tr:hover .tfg-sticky-right {
+  background: var(--tfg-hover);
+}
+
+.tfg-table tbody tr[data-active] .tfg-sticky-left,
+.tfg-table tbody tr[data-active] .tfg-sticky-right {
+  background: var(--tfg-active-row);
+}
+
+.tfg-th.tfg-sticky-left {
+  z-index: 8;
+}
+
+.tfg-th.tfg-sticky-right {
+  z-index: 7;
+}
+
+/* Focused cell: a filled, outlined cell that reads as the active cell of a spreadsheet. */
+.tfg-table td[data-active] {
+  box-shadow: inset 0 0 0 2px var(--tfg-accent);
+  background: var(--tfg-accent-soft);
+  z-index: 4;
+}
+
+.tfg-table td[data-active][data-over] {
+  background: #fdeec9;
+}
+
+.tfg-table:not(:focus) td[data-active] {
+  background: var(--tfg-accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(15, 108, 189, 0.45);
+}
+
+/* ---------------------------------------------------------- identity cell */
+
+.tfg-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.tfg-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+  background: #0f6cbd;
+}
+
+.tfg-avatar[data-tone="1"] { background: #2b7d3f; }
+.tfg-avatar[data-tone="2"] { background: #8764b8; }
+.tfg-avatar[data-tone="3"] { background: #c19c00; }
+.tfg-avatar[data-tone="4"] { background: #ca5010; }
+.tfg-avatar[data-tone="5"] { background: #038387; }
+
+.tfg-identity__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.tfg-identity__name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tfg-identity__name--totals {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 10.5px;
+}
+
+.tfg-identity__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--tfg-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tfg-tag {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--tfg-accent-soft);
+  color: var(--tfg-accent);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tfg-rowactions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tfg-table tbody tr:hover .tfg-rowactions,
+.tfg-table tbody tr[data-active] .tfg-rowactions,
+.tfg-rowactions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------- editor */
+
+.tfg-editor {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+  margin: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--tfg-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tfg-editor--text {
+  text-align: left;
+  padding: 0;
+  height: 22px;
+  border: 1px solid var(--tfg-accent);
+  border-radius: 2px;
+  background: var(--tfg-bg);
+  padding: 0 4px;
+}
+
+/* ----------------------------------------------------------------- totals */
+
+/* Flexible column between the timeline and the totals: blank space that pushes the totals to the
+   right edge when the timeline does not fill the width. */
+.tfg-th--spacer {
+  padding: 0;
+  border-right: 0;
+  background: var(--tfg-bg-head);
+  border-bottom: 1px solid var(--tfg-border-strong);
+}
+
+.tfg-td--spacer {
+  padding: 0;
+  border-right: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--tfg-border);
+}
+
+.tfg-tf--spacer {
+  padding: 0;
+  border-right: 0;
+  background: var(--tfg-bg-foot);
+  border-top: 1px solid var(--tfg-border-strong);
+}
+
+.tfg-chip--info {
+  background: var(--tfg-accent-soft);
+  color: var(--tfg-accent);
+}
+
+.tfg-tf {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  height: var(--tfg-foot-h);
+  padding: 0 6px;
+  background: var(--tfg-bg-foot);
+  border-top: 1px solid var(--tfg-border-strong);
+  border-right: 1px solid var(--tfg-border);
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--tfg-text);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tfg-tf.tfg-sticky-left,
+.tfg-tf.tfg-sticky-right {
+  z-index: 8;
+  background: var(--tfg-bg-foot);
+}
+
+.tfg-tf--identity {
+  padding: 0;
+}
+
+.tfg-tf--identity .tfg-identity__text {
+  line-height: 1.2;
+}
+
+/* ------------------------------------------------------------------- hint */
+
+.tfg-hint {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--tfg-border);
+  background: var(--tfg-bg-subtle);
+  color: var(--tfg-text-muted);
+  font-size: 10.5px;
+}
+
+.tfg-hint b {
+  font-weight: 700;
+  color: var(--tfg-text);
+}
+
+.tfg-root[data-density="narrow"] .tfg-hint__legend {
+  display: none;
+}
+
+/* On a phone-width screen the person cell gives its room to the name. */
+.tfg-root[data-density="narrow"] .tfg-avatar {
+  display: none;
+}
+
+/* -------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .tfg-root * {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,1459 @@
+
+    conTimeFees:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        BorderColor: =ColorValue("#E1DFDD")
+        BorderThickness: =1
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        Height: =78+Gallery6.Height
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingTop: =4
+        Width: =Parent.Width-16
+        Children:
+        conTimeFeesHeader:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        Height: =32
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =16
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Gallery6.TemplateWidth
+        Children:
+        Container30:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =4
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Children:
+        HtmlText3_2:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        FillPortions: =1
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; display: flex; flex-direction:column; justify-content: end;'>time fees</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =180
+        PaddingBottom: =0
+        PaddingLeft: =12
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =160
+        HtmlText3_4:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>RPH</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =60
+        HtmlText3_7:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>std</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =60
+        HtmlText3_9:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>real%</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =60
+        Container27:
+        Control: GroupContainer@1.5.0
+        Variant: ManualLayout
+        Properties:
+        BorderColor: =ColorValue("#E1DFDD")
+        BorderThickness: =1
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Children:
+        Gallery8:
+        Control: Gallery@2.15.0
+        Variant: Horizontal
+        Properties:
+        BorderColor: =RGBA(245, 245, 245, 1)
+        Height: =32
+        Items: |-
+        =Switch(locPhasing,
+        "weekly",
+        AddColumns(GroupBy(colWorkstreamTimeline, WeekNum, YearNum, TimelineGrouped), MonthNum, 0, Value, 0),
+        "daily",
+        AddColumns(GroupBy(colWorkstreamTimeline, Value, YearNum, TimelineGrouped), MonthNum, 0, WeekNum, 0),
+        "monthly",
+        AddColumns(GroupBy(colWorkstreamTimeline, MonthNum, YearNum, TimelineGrouped), WeekNum, 0, Value, 0)
+        )
+
+/*
+Switch(locPhasing, "weekly",
+Sequence(varWorkstreamSelected.NumberOfWeeks),
+"daily", Sequence(varWorkstreamSelected.NumberOfWeeks5),
+"monthly",
+Sequence(DateDiff(varWorkstreamSelected.WorkstreamStart, DateAdd(varWorkstreamSelected.WorkstreamStart, varWorkstreamSelected.NumberOfWeeks7, TimeUnit.Days), TimeUnit.Months)+1, Month(varWorkstreamSelected.WorkstreamStart), 1))
+/
+TemplatePadding: =0
+TemplateSize: =58
+Width: =Self.AllItemsCountSelf.TemplateWidth
+X: =-1sliderHorizontalScroll.Value
+Children:
+
+        Container8:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        Height: =32
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =58
+        Children:
+        HtmlText3_10:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =32
+        HtmlText: |-
+        =$"<div style='padding: 4px;text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>
+        {
+        Switch(locPhasing, "weekly",
+        $"W{ThisItem.WeekNum}<br>
+        ({Text(First(ThisItem.TimelineGrouped).Date, "dd mmm")})", "daily",
+        $"Day: {ThisItem.Value}<br>
+        {Text(First(ThisItem.TimelineGrouped).Date, "dd mmm")}",
+        "monthly",
+        Text(Date(ThisItem.YearNum, ThisItem.MonthNum, 1), "mmm yy"))
+        }
+        </div>"
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =50
+        X: =4
+        Container25:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingLeft: =2
+        PaddingRight: =2
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =165
+        Children:
+        HtmlText3_15:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>hours</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =55
+        HtmlText3_16:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>fee (k)</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =55
+        HtmlText3_17:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =16
+        HtmlText: |-
+        ="<div style='text-align: center; font-size: 9px; color: #605E5C; text-transform: uppercase; font-weight: 700; '>GM%</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =55
+        conTimeFeesActions:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        Fill: =ColorValue("#F8F9FA")
+        FillPortions: =0
+        Height: =20
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =12
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Children:
+        Container34:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =16
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =150
+        Children:
+        ButtonCanvas13:
+        Control: Button@0.0.45
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        Appearance: ='ButtonCanvas.Appearance'.Transparent
+        DisplayMode: =varProposalDisplayMode
+        FontSize: =10
+        Height: =16
+        Icon: ="PeopleAdd"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        OnSelect: |-
+        =Set(varAddingStaff, true);
+        /*
+        Collect(colPeopleAllocation, {
+        WorkstreamID: varWorkstreamSelected.ID,
+        CostRate:150,
+        StandardRate: 200,
+        JobLevel: "C",
+        Name: "Mr Dummy",
+        Team: "FTI Guys",
+        RPH: 180,
+        DailyHours: ""
+        })
+        /
+        Text: ="Add Staff"
+        Width: =88
+        sliderHorizontalScroll:
+        Control: Slider@1.0.32
+        Properties:
+        DisplayMode: =If(Self.Max < 0, DisplayMode.Disabled, DisplayMode.Edit)
+        Height: =16
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        Max: =locGalleryWidth-500
+        Size: ='Slider.Size'.Small
+        Value: =0
+        Visible: =Self.Max > 0
+        Width: =338
+        Container42:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =225
+        Children:
+        btnDaily:
+        Control: Button@0.0.45
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        Appearance: ='ButtonCanvas.Appearance'.Transparent
+        FontColor: |-
+        =If(locPhasing = "daily",
+        ColorValue("#0070CA"), Blank())
+        FontSize: =10
+        Height: =16
+        Icon: ="Calendar"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        OnSelect: |
+        =UpdateContext({locPhasing: "daily"});
+        UpdateContext({
+        locGalleryWidth: Switch(
+        locPhasing,
+        "weekly",
+        Last(Sequence(varWorkstreamSelected.NumberOfWeeks)).Value58,
+        "daily",
+        Last(Sequence(varWorkstreamSelected.NumberOfWeeks * 5)).Value58,
+        "monthly",
+        Last(Sequence(DateDiff(varWorkstreamSelected.WorkstreamStart, DateAdd(varWorkstreamSelected.WorkstreamStart, varWorkstreamSelected.NumberOfWeeks7, TimeUnit.Days), TimeUnit.Months)+1, Month(varWorkstreamSelected.WorkstreamStart), 1)).Value58
+        )});
+        Reset(sliderHorizontalScroll);
+        Text: ="Daily"
+        Width: =75
+        btnWeekly:
+        Control: Button@0.0.45
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        Appearance: ='ButtonCanvas.Appearance'.Transparent
+        FontColor: |-
+        =If(locPhasing = "weekly",
+        ColorValue("#0070CA"), Blank())
+        FontSize: =10
+        Height: =16
+        Icon: ="Calendar"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        OnSelect: |
+        =UpdateContext({locPhasing: "weekly"});
+        UpdateContext({
+        locGalleryWidth: Switch(
+        locPhasing,
+        "weekly",
+        Last(Sequence(varWorkstreamSelected.NumberOfWeeks)).Value58,
+        "daily",
+        Last(Sequence(varWorkstreamSelected.NumberOfWeeks * 5)).Value58,
+        "monthly",
+        Last(Sequence(DateDiff(varWorkstreamSelected.WorkstreamStart, DateAdd(varWorkstreamSelected.WorkstreamStart, varWorkstreamSelected.NumberOfWeeks7, TimeUnit.Days), TimeUnit.Months)+1, Month(varWorkstreamSelected.WorkstreamStart), 1)).Value58
+        )});
+        Reset(sliderHorizontalScroll);
+        Text: ="Weekly"
+        Width: =75
+        btnMonthly:
+        Control: Button@0.0.45
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        Appearance: ='ButtonCanvas.Appearance'.Transparent
+        FontColor: |-
+        =If(locPhasing = "monthly",
+        ColorValue("#0070CA"), Blank())
+        FontSize: =10
+        Height: =16
+        Icon: ="Calendar"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        OnSelect: |-
+        =UpdateContext({locPhasing: "monthly"});
+        UpdateContext({
+        locGalleryWidth: Switch(
+        locPhasing,
+        "weekly",
+        Last(Sequence(varWorkstreamSelected.NumberOfWeeks)).Value58,
+        "daily",
+        Last(Sequence(varWorkstreamSelected.NumberOfWeeks * 5)).Value58,
+        "monthly",
+        Last(Sequence(DateDiff(varWorkstreamSelected.WorkstreamStart, DateAdd(varWorkstreamSelected.WorkstreamStart, varWorkstreamSelected.NumberOfWeeks7, TimeUnit.Days), TimeUnit.Months)+1, Month(varWorkstreamSelected.WorkstreamStart), 1)).Value58
+        )});
+        Reset(sliderHorizontalScroll);
+        Text: ="Monthly"
+        Width: =75
+        Container35:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =4
+        LayoutJustifyContent: =LayoutJustifyContent.SpaceBetween
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingLeft: =4
+        PaddingRight: =4
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =165
+        X: =40
+        Y: =40
+        Rectangle2_3:
+        Control: Rectangle@2.3.0
+        Properties:
+        BorderColor: =RGBA(0, 0, 0, 0)
+        BorderStyle: =BorderStyle.None
+        BorderThickness: =2
+        DisabledFill: =ColorValue("#E1DFDD")
+        DisplayMode: =DisplayMode.Disabled
+        Fill: =RGBA(0, 120, 212, 1)
+        FocusedBorderThickness: =4
+        Height: =1
+        HoverFill: =RGBA(0, 120, 212, 1)
+        PressedFill: =RGBA(0, 120, 212, 1)
+        Width: =Parent.Width
+        Y: =32
+        Gallery6:
+        Control: Gallery@2.15.0
+        Variant: VariableHeight
+        Properties:
+        BorderColor: =RGBA(245, 245, 245, 1)
+        FillPortions: =0
+        Height: =Self.TemplateHeightSelf.AllItemsCount
+        Items: |-
+        =Sort(colPeopleAllocated, JobLevelOrder, SortOrder.Ascending)
+        //Sort(AddColumns(colPeopleAllocated, JobLevelSorting, Switch('[JobLevel]', "Snr Managing Dir", 0, "Managing Dir", 1, "Snr Director", 2, "Director", 3, "Snr Consultant", 4, "Consultant", 5, "Research Analyst", 6, "Intern", 7)), JobLevelSorting, SortOrder.Ascending)
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        TemplatePadding: =0
+        TemplateSize: =38
+        Children:
+        conTimeFeesGalleryRow:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        Height: =36
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =Parent.TemplateWidth
+        Children:
+        Container31:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =4
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =
+        Children:
+        Container37:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Vertical
+        LayoutGap: =4
+        LayoutJustifyContent: =LayoutJustifyContent.Center
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =24
+        Children:
+        Image5:
+        Control: Image@2.2.3
+        Properties:
+        AlignInContainer: =AlignInContainer.Stretch
+        BorderColor: =RGBA(0, 0, 0, 0)
+        BorderStyle: =BorderStyle.None
+        BorderThickness: =2
+        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+        DisabledFill: =RGBA(0, 0, 0, 0)
+        FocusedBorderThickness: =4
+        Height: =12
+        HoverBorderColor: =RGBA(0, 0, 0, 0)
+        HoverFill: =RGBA(0, 0, 0, 0)
+        Image: |-
+        ="data:image/svg+xml;utf8, " & EncodeUrl(
+        "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='#0070CA' class='bi bi-arrow-left-right' viewBox='0 0 16 16'>
+        <path fill-rule='evenodd' d='M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5'/>
+        </svg>"
+        )
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PressedBorderColor: =RGBA(0, 0, 0, 0)
+        PressedFill: =RGBA(0, 0, 0, 0)
+        Visible: =false
+        Image5_1:
+        Control: Image@2.2.3
+        Properties:
+        AlignInContainer: =AlignInContainer.Stretch
+        BorderColor: =RGBA(0, 0, 0, 0)
+        BorderStyle: =BorderStyle.None
+        BorderThickness: =2
+        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+        DisabledFill: =RGBA(0, 0, 0, 0)
+        DisplayMode: =varProposalDisplayMode
+        FocusedBorderThickness: =4
+        Height: =12
+        HoverBorderColor: =RGBA(0, 0, 0, 0)
+        HoverFill: =RGBA(0, 0, 0, 0)
+        Image: |-
+        ="data:image/svg+xml;utf8, " & EncodeUrl(
+        "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='#0070CA' class='bi bi-person-x-fill' viewBox='0 0 16 16'>
+        <path fill-rule='evenodd' d='M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m6.146-2.854a.5.5 0 0 1 .708 0L14 6.293l1.146-1.147a.5.5 0 0 1 .708.708L14.707 7l1.147 1.146a.5.5 0 0 1-.708.708L14 7.707l-1.146 1.147a.5.5 0 0 1-.708-.708L13.293 7l-1.147-1.146a.5.5 0 0 1 0-.708'/>
+        </svg>"
+        )
+        LayoutMinHeight: =16
+        LayoutMinWidth: =12
+        OnSelect: |-
+        =Concurrent(
+        Remove(colPeopleAllocated, ThisItem),
+        Remove(colAllocatedHours, Filter(colAllocatedHours, Name=ThisItem.'[Name]')));
+        fnCalculateWorkstream();
+        PressedBorderColor: =RGBA(0, 0, 0, 0)
+        PressedFill: =RGBA(0, 0, 0, 0)
+        htmlPersonDetails:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        FillPortions: =1
+        Font: =Font.'Segoe UI'
+        HtmlText: |-
+        =With({
+        _name: ThisItem.'[Name]',
+        _role: ThisItem.'[JobLevel]',
+        _practice: ThisItem.'[Team]',
+        _rate: ThisItem.'[CostRate]',
+        _stdRate: ThisItem.'[FeeRate]',
+        _realisation: IfError(ThisItem.'[FeeRate]'/ThisItem.'[CostRate]', Blank()),
+        _numWeeks: 6,
+        _accentColor: "#0078d4"
+        },
+
+"<div style='
+display: flex;
+align-items: center;
+font-family: ""Segoe UI"", sans-serif;
+padding: 4px 0px;
+background-color: #ffffff;
+'>
+<div style='width: 100%; flex-shrink: 0; line-height: 1.2;'>
+<div style='font-size: 11px; font-weight: 700; color: #323130;'>" & _name & "</div>
+<div style='font-size: 10px; color: #605e5c;'>" & $"{ThisItem.'[JobLevel]'} | {_practice}" & "</div>
+</div>
+</div>"
+)
+LayoutMinWidth: =180
+PaddingBottom: =0
+PaddingLeft: =0
+PaddingRight: =0
+PaddingTop: =0
+Width: =132
+
+        TextInputCanvas9:
+        Control: TextInput@0.0.54
+        Properties:
+        Align: =Align.Center
+        BorderStyle: =BorderStyle.None
+        DisplayMode: |-
+        =If(varProposalDisplayMode = "edit",
+        If(drpPricingMethod.Selected.Method = "Realisation Adjustment", DisplayMode.Disabled, DisplayMode.Edit), DisplayMode.View)
+        FontSize: =10
+        FontWeight: =FontWeight.Semibold
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        OnChange: |-
+        =Patch(colPeopleAllocated, ThisItem, {RPH:Value(Self.Value), Realisation:Value(Self.Value)/ThisItem.'[FeeRate]'});
+        fnCalculateWorkstream();
+        PaddingBottom: =0
+        TriggerOutput: ='TextInputCanvas.TriggerOutput'.FocusOut
+        Value: =NoDecimalPlaces(ThisItem.RPH)
+        Width: =60
+        TextInputCanvas9_1:
+        Control: TextInput@0.0.54
+        Properties:
+        Align: =Align.Center
+        Appearance: ='TextInputCanvas.Appearance'.Outline
+        BorderStyle: =BorderStyle.None
+        DisplayMode: =DisplayMode.View
+        FontColor: =Color.Black
+        FontSize: =10
+        FontWeight: =FontWeight.Semibold
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        Value: =NoDecimalPlaces(ThisItem.'[FeeRate]')
+        Width: =60
+        TextInputCanvas9_2:
+        Control: TextInput@0.0.54
+        Properties:
+        Align: =Align.Center
+        Appearance: ='TextInputCanvas.Appearance'.FilledDarker
+        BorderStyle: =BorderStyle.None
+        DisplayMode: |-
+        =If(varProposalDisplayMode = "edit",
+        If(drpPricingMethod.Selected.Method = "Realisation Adjustment", DisplayMode.Edit, DisplayMode.Disabled), DisplayMode.View)
+        FontColor: =Color.Black
+        FontSize: =10
+        FontWeight: =FontWeight.Semibold
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        OnChange: |-
+        =Patch(colPeopleAllocated, ThisItem, {Realisation:Value(Self.Value)/100, RPH:ThisItem.'[FeeRate]'Self.Value/100});
+        fnCalculateWorkstream();
+        PaddingBottom: =0
+        Value: |-
+        =
+        If(varWorkstreamSelected.PricingMethod = "Realisation Adjustment",
+        Text(ThisItem.Realisation100, "#"),
+        If(IsBlankOrError(ThisItem.'[FeeRate]'), "-", Text(ThisItem.RPH/ThisItem.'[FeeRate]'100, "#")))
+        Width: =60
+        Container29:
+        Control: GroupContainer@1.5.0
+        Variant: ManualLayout
+        Properties:
+        AlignInContainer: =AlignInContainer.Start
+        BorderColor: =ColorValue("#E1DFDD")
+        BorderThickness: =1
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Children:
+        Gallery7:
+        Control: Gallery@2.15.0
+        Variant: Horizontal
+        Properties:
+        BorderColor: =RGBA(245, 245, 245, 1)
+        DelayItemLoading: =false
+        Height: =36
+        Items: |-
+        =Switch(locPhasing,
+        "weekly",
+        AddColumns(GroupBy(colWorkstreamTimeline, WeekNum, YearNum, TimelineGrouped), '[Name]', ThisItem.'[Name]', MonthNum, 0, Value, 0),
+        "daily",
+        AddColumns(GroupBy(colWorkstreamTimeline, Value, YearNum, TimelineGrouped), '[Name]', ThisItem.'[Name]', MonthNum, 0, WeekNum, 0),
+        "monthly",
+        AddColumns(GroupBy(colWorkstreamTimeline, MonthNum, YearNum, TimelineGrouped), '[Name]', ThisItem.'[Name]', WeekNum, 0, Value, 0)
+        )
+
+/*
+Switch(
+locPhasing,
+"weekly",
+AddColumns(
+Sequence(varWorkstreamSelected.NumberOfWeeks),
+Name,
+ThisItem.'[Name]'
+),
+"daily",
+AddColumns(
+Sequence(varWorkstreamSelected.NumberOfWeeks * 5),
+Name,
+ThisItem.'[Name]'
+),
+"monthly",
+AddColumns(Sequence(DateDiff(varWorkstreamSelected.WorkstreamStart, DateAdd(varWorkstreamSelected.WorkstreamStart, varWorkstreamSelected.NumberOfWeeks7, TimeUnit.Days), TimeUnit.Months)+1, Month(varWorkstreamSelected.WorkstreamStart), 1) As Seq, Name, ThisItem.'[Name]')
+)
+/
+TemplatePadding: =0
+TemplateSize: =58
+Width: =Self.AllItemsCountSelf.TemplateWidth
+X: =-1sliderHorizontalScroll.Value
+Children:
+
+        txtHours:
+        Control: ModernTextInput@1.1.2
+        Properties:
+        Align: =Align.Center
+        BorderColor: =//ColorValue("#E1DFDD")
+        BorderStyle: =BorderStyle.Solid
+        BorderThickness: =1
+        Default: |-
+        =Switch(locPhasing,
+        "weekly",
+        Sum(Filter(colAllocatedHours, WeekNum = ThisItem.WeekNum, Name = ThisItem.'[Name]', YearNum = ThisItem.YearNum), HoursWorked),
+        "monthly",
+        Sum(Filter(colAllocatedHours, MonthNum = ThisItem.MonthNum, Name = ThisItem.'[Name]', YearNum = ThisItem.YearNum), HoursWorked),
+        "daily",
+        Sum(Filter(colAllocatedHours, Value = ThisItem.Value, Name = ThisItem.'[Name]', YearNum = ThisItem.YearNum), HoursWorked))
+        /*
+        Switch(locPhasing,
+        "daily",
+        LookUp(colAllocatedHours, Name = ThisItem.Name && Value = ThisItem.Value, HoursWorked),
+        "weekly",
+        Sum(Filter(colAllocatedHours, Name = ThisItem.Name, RoundUp(Value/5,0) = ThisItem.Value), HoursWorked),
+        "monthly",
+        Sum(Filter(AddColumns(colAllocatedHours, WorkingDay, DateAdd(varWorkstreamSelected.WorkstreamStart, ThisRecord.Value-1+(ThisRecord.Value-1 - Mod(ThisRecord.Value-1, 5))/52, TimeUnit.Days)), Year(WorkingDay)=Year(Date(Year(varWorkstreamSelected.WorkstreamStart), ThisItem.Value, 1)), Month(WorkingDay) = Month(Date(Year(varWorkstreamSelected.WorkstreamStart), ThisItem.Value, 1)), Name=ThisItem.Name), HoursWorked)
+        )
+        /
+        DisplayMode: =varProposalDisplayMode
+        Fill: =If(locPhasing="weekly"&&Value(Self.Text) > 40, RGBA(255,249,224,100))
+        FontWeight: =FontWeight.Semibold
+        MaxLength: =-1
+        OnChange: |-
+        =Switch(locPhasing,
+        "weekly",
+        With({_hours: Value(Self.Text),
+        _timelineFiltered: Filter(
+        colWorkstreamTimeline,
+        WeekNum = ThisItem.WeekNum, YearNum = ThisItem.YearNum,
+        Weekday <> 6,
+        Weekday <> 7
+        )},
+        If(_hours <= 40,
+        With({_daysToAllocate: RoundDown(_hours/8, 0)},
+        With({_lastDaysHours: Mod(_hours, 8)},
+        RemoveIf(colAllocatedHours, Name = ThisItem.'[Name]'&&WeekNum = ThisItem.WeekNum&&YearNum=ThisItem.YearNum);
+        Collect(colAllocatedHours, AddColumns(FirstN(Filter(colWorkstreamTimeline, WeekNum = ThisItem.WeekNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), _daysToAllocate), HoursWorked, 8, Name, ThisItem.'[Name]'));
+        Collect(colAllocatedHours, AddColumns(Last(FirstN(Filter(colWorkstreamTimeline, WeekNum = ThisItem.WeekNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), _daysToAllocate+1)), HoursWorked, _lastDaysHours, Name, ThisItem.'[Name]'))
+        )
+        ),
+
+With({_daysToAllocate: RoundDown(_hours/CountRows(_timelineFiltered), 0)},
+With({_lastDaysHours: Mod(_hours, _daysToAllocate)},
+RemoveIf(colAllocatedHours, Name = ThisItem.'[Name]'&&WeekNum = ThisItem.WeekNum&&YearNum=ThisItem.YearNum);
+Collect(colAllocatedHours, AddColumns(FirstN(Filter(colWorkstreamTimeline, WeekNum = ThisItem.WeekNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), CountRows(_timelineFiltered)-1), HoursWorked, _daysToAllocate, Name, ThisItem.'[Name]'));
+Collect(colAllocatedHours, AddColumns(Last(FirstN(Filter(colWorkstreamTimeline, WeekNum = ThisItem.WeekNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), CountRows(_timelineFiltered))), HoursWorked, _lastDaysHours+_daysToAllocate, Name, ThisItem.'[Name]'))
+)
+)
+)),
+"daily",
+With({_hours: Value(Self.Text)},
+RemoveIf(colAllocatedHours, Name = ThisItem.'[Name]', Value = ThisItem.Value);
+Collect(colAllocatedHours, AddColumns(Filter(colWorkstreamTimeline, Value = ThisItem.Value), Name, ThisItem.'[Name]', HoursWorked, _hours)));
+,
+"monthly",
+With({_DaysOfMonth: CountRows(Filter(colWorkstreamTimeline, MonthNum = ThisItem.MonthNum, YearNum = ThisItem.YearNum)), _hours: Value(Self.Text)},
+If(_hours <= _DaysOfMonth8,
+With({_daysToAllocate: RoundDown(_hours/8, 0)},
+With({_lastDaysHours: Mod(_hours, 8)},
+RemoveIf(colAllocatedHours, Name = ThisItem.'[Name]'&&MonthNum = ThisItem.MonthNum&&YearNum=ThisItem.YearNum);
+Collect(colAllocatedHours, AddColumns(FirstN(Filter(colWorkstreamTimeline, MonthNum = ThisItem.MonthNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), _daysToAllocate), HoursWorked, 8, Name, ThisItem.'[Name]'));
+Collect(colAllocatedHours, AddColumns(Last(FirstN(Filter(colWorkstreamTimeline, MonthNum = ThisItem.MonthNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), _daysToAllocate+1)), HoursWorked, _lastDaysHours, Name, ThisItem.'[Name]'));
+)),
+With({_daysToAllocate: RoundDown(_hours/_DaysOfMonth, 0)},
+With({_lastDaysHours: Mod(_hours, _daysToAllocate)},
+RemoveIf(colAllocatedHours, Name = ThisItem.'[Name]'&&MonthNum = ThisItem.MonthNum&&YearNum=ThisItem.YearNum);
+Collect(colAllocatedHours, AddColumns(FirstN(Filter(colWorkstreamTimeline, MonthNum = ThisItem.MonthNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), _DaysOfMonth-1), HoursWorked, _daysToAllocate, Name, ThisItem.'[Name]'));
+Collect(colAllocatedHours, AddColumns(Last(FirstN(Filter(colWorkstreamTimeline, MonthNum = ThisItem.MonthNum, Weekday <> 6, Weekday <> 7, YearNum = ThisItem.YearNum), _DaysOfMonth)), HoursWorked, _lastDaysHours+_daysToAllocate, Name, ThisItem.'[Name]'))
+)
+)
+)
+));
+
+fnCalculateWorkstream();
+Reset(txtHours);
+/*
+Switch(locPhasing,
+"weekly",
+With(
+{_hours: Value(Self.Value)},
+RemoveIf(
+colAllocatedHours,
+WeekNum = ThisItem.WeekNum && Name = ThisItem.'[Name]'
+);
+With(
+{
+_timelineFiltered: Filter(
+colWorkstreamTimeline,
+WeekNum = ThisItem.WeekNum,
+Weekday <> 6,
+Weekday <> 7
+)
+},
+With({_lastDay: Mod(_hours, CountRows(_timelineFiltered)), _lastRec: Max(_timelineFiltered, Value)},
+If(_hours > 0,
+Collect(
+colAllocatedHours,
+AddColumns(
+DropColumns(
+_timelineFiltered,
+Allocation
+),
+Name,
+ThisItem.'[Name]',
+HoursWorked,
+(_hours - _lastDay) / CountRows(_timelineFiltered)
+)
+);
+With({_hrs: Value(Last(Filter(colAllocatedHours, WeekNum = ThisItem.WeekNum, Name = ThisItem.'[Name]')).HoursWorked)},
+Patch(colAllocatedHours, Last(Filter(colAllocatedHours, WeekNum = ThisItem.WeekNum, Name = ThisItem.'[Name]')), {HoursWorked: _hrs+_lastDay}))
+)
+)
+)
+),
+"daily",
+false,
+"monthly",
+false);
+fnCalculateWorkstream();
+/
+//Ungroup(ThisItem.TimelineGrouped)
+/*
+Switch(
+locPhasing,
+"daily",
+Patch(
+colAllocatedHours,
+Coalesce(
+LookUp(
+colAllocatedHours,
+Name = ThisItem.Name && Value = ThisItem.Value
+),
+Defaults(colAllocatedHours)
+),
+{
+Name: ThisItem.Name,
+Value: ThisItem.Value,
+HoursWorked: Value(Self.Value)
+}
+),
+"weekly",
+With({varHours: Value(Self.Value)},
+Remove(
+colAllocatedHours,
+Filter(
+colAllocatedHours,
+Name = ThisItem.Name,
+Value >= ThisItem.Value5-4 && Value <= ThisItem.Value5
+)
+);
+Collect(
+colAllocatedHours,
+AddColumns(
+Sequence(
+5,
+ThisItem.Value5-4,
+1
+),
+Name,
+ThisItem.Name,
+HoursWorked,
+Value(Self.Value)/5
+)
+)),
+"monthly",
+With(
+{
+varHoursToSplit: Value(Self.Value),
+varStartOfMonth: With(
+{
+varExceptionForWorkstreamStart: (RoundDown(
+DateDiff(
+varWorkstreamSelected.WorkstreamStart,
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+),
+TimeUnit.Days
+) / 7,
+0
+) * 5 + Mod(
+5 + Weekday(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+)
+) - Weekday(varWorkstreamSelected.WorkstreamStart),
+5
+)) + 1
+},
+If(
+varExceptionForWorkstreamStart < 1,
+1,
+varExceptionForWorkstreamStart
+)
+),
+varDaysInMonth: If(
+ThisItem.Value = Month(varWorkstreamSelected.WorkstreamStart) && Year(varWorkstreamSelected.WorkstreamStart) = Year(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+)
+),
+(RoundUp(
+DateDiff(
+varWorkstreamSelected.WorkstreamStart,
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value+1,
+1
+),
+TimeUnit.Days
+) / 7,
+0
+) * 5 + Mod(
+5 + Weekday(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value+1,
+1
+)
+) - Weekday(varWorkstreamSelected.WorkstreamStart),
+5
+)),
+ThisItem.Value = Month(
+DateAdd(
+varWorkstreamSelected.WorkstreamStart,
+varWorkstreamSelected.NumberOfWeeks * 7,
+TimeUnit.Days
+)
+) && Year(
+DateAdd(
+varWorkstreamSelected.WorkstreamStart,
+varWorkstreamSelected.NumberOfWeeks * 7,
+TimeUnit.Days
+)
+) = Year(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+)
+),
+(RoundDown(
+DateDiff(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+),
+DateAdd(
+varWorkstreamSelected.WorkstreamStart,
+varWorkstreamSelected.NumberOfWeeks * 7,
+TimeUnit.Days
+),
+TimeUnit.Days
+) / 7,
+0
+) * 5 + Mod(
+5 + Weekday(
+DateAdd(
+varWorkstreamSelected.WorkstreamStart,
+varWorkstreamSelected.NumberOfWeeks * 7,
+TimeUnit.Days
+)
+) - Weekday(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+)
+),
+5
+)),
+(RoundDown(
+DateDiff(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+),
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value+1,
+1
+),
+TimeUnit.Days
+) / 7,
+0
+) * 5 + Mod(
+5 + Weekday(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value+1,
+1
+)
+) - Weekday(
+Date(
+Year(varWorkstreamSelected.WorkstreamStart),
+ThisItem.Value,
+1
+)
+),
+5
+))
+)
+},
+With(
+{varEndOfMonth: varStartOfMonth + varDaysInMonth},
+Remove(
+colAllocatedHours,
+Filter(
+colAllocatedHours,
+Name = ThisItem.Name,
+Value >= varStartOfMonth && Value <= varEndOfMonth
+)
+);
+Collect(
+colAllocatedHours,
+AddColumns(
+Sequence(
+varEndOfMonth - varStartOfMonth,
+varStartOfMonth,
+1
+),
+Name,
+ThisItem.Name,
+HoursWorked,
+varHoursToSplit / (varEndOfMonth - varStartOfMonth)
+)
+)
+)
+)
+);
+fnCalculateWorkstream();
+If(locPhasing="weekly"&&Value(Self.Value)>40, Notify("Hours inserted exceed standard working week.", NotificationType.Information))
+/
+PaddingBottom: =0
+Placeholder: =""
+Size: =10
+TriggerOutput: =TriggerOutput.FocusOut
+Width: =50
+X: =4
+Y: =2
+
+        icnExpandHours:
+        Control: Arrow@2.3.0
+        Properties:
+        BorderColor: =RGBA(0, 0, 0, 0)
+        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+        Fill: =RGBA(0, 120, 212, 1)
+        Height: =15
+        OnSelect: |-
+        =With({_firstHrs: First(Sort(Filter(colAllocatedHours, Name = ThisItem.'[Name]'), Value, SortOrder.Ascending))},
+        RemoveIf(colAllocatedHours, Name = ThisItem.'[Name]' && Value > _firstHrs.Value);
+        Collect(colAllocatedHours, AddColumns(Filter(colWorkstreamTimeline, Value >_firstHrs.Value), Name, ThisItem.'[Name]', HoursWorked, _firstHrs.HoursWorked))
+        );
+        Visible: =locPhasing = "daily"
+        Width: =15
+        Y: =5
+        Container32:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =165
+        Children:
+        TextInputCanvas9_4:
+        Control: TextInput@0.0.54
+        Properties:
+        Align: =Align.Center
+        Appearance: ='TextInputCanvas.Appearance'.Outline
+        BorderStyle: =BorderStyle.None
+        DisplayMode: =DisplayMode.View
+        FontSize: =10
+        FontWeight: =FontWeight.Semibold
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        Value: =Sum(Filter(colAllocatedHours, ThisItem.'[Name]'=Name), HoursWorked)
+        Width: =55
+        TextInputCanvas9_5:
+        Control: TextInput@0.0.54
+        Properties:
+        Align: =Align.Center
+        Appearance: ='TextInputCanvas.Appearance'.Outline
+        BorderStyle: =BorderStyle.None
+        DisplayMode: =DisplayMode.View
+        FontSize: =10
+        FontWeight: =FontWeight.Semibold
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        Value: =DisplayThousand(Sum(Filter(colAllocatedHours, ThisItem.'[Name]'=Name), HoursWorked)ThisItem.RPH)
+        Width: =55
+        TextInputCanvas9_6:
+        Control: TextInput@0.0.54
+        Properties:
+        Align: =Align.Center
+        Appearance: ='TextInputCanvas.Appearance'.Outline
+        BorderStyle: =BorderStyle.None
+        DisplayMode: =DisplayMode.View
+        FontSize: =10
+        FontWeight: =FontWeight.Semibold
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        Value: |-
+        =0
+        //If(IsEmpty(Filter(colAllocatedHours, Name = ThisItem.'[Name]')), Blank(),
+        //fnWorkstreamBlankHandler( ThisItem.'[CostRate]', Percentage(With({varTotalHours:Sum(Filter(colAllocatedHours, ThisItem.'[Name]'=Name), HoursWorked)},
+        //(varTotalHoursThisItem.RPH-varTotalHoursThisItem.'[CostRate]')/(varTotalHoursThisItem.'[CostRate]')))))
+        Visible: =false
+        Width: =55
+        Rectangle2:
+        Control: Rectangle@2.3.0
+        Properties:
+        BorderColor: =RGBA(0, 0, 0, 0)
+        BorderStyle: =BorderStyle.None
+        BorderThickness: =2
+        DisabledFill: =ColorValue("#E1DFDD")
+        DisplayMode: =DisplayMode.Disabled
+        Fill: =RGBA(0, 120, 212, 1)
+        FocusedBorderThickness: =4
+        Height: =1
+        HoverFill: =RGBA(0, 120, 212, 1)
+        OnSelect: =Select(Parent)
+        PressedFill: =RGBA(0, 120, 212, 1)
+        Width: =Parent.TemplateWidth
+        Y: =36
+        Rectangle5_1:
+        Control: Rectangle@2.3.0
+        Properties:
+        BorderColor: =RGBA(0, 0, 0, 0)
+        BorderStyle: =BorderStyle.None
+        DisabledFill: =ColorValue("#E1DFDD")
+        DisplayMode: =DisplayMode.Disabled
+        Fill: =RGBA(0, 120, 212, 1)
+        FocusedBorderThickness: =4
+        Height: =1
+        HoverFill: =RGBA(0, 120, 212, 1)
+        OnSelect: =
+        PressedFill: =RGBA(0, 120, 212, 1)
+        Width: =Parent.Width
+        Y: =19
+        Container29_1:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        DropShadow: =DropShadow.None
+        Fill: =ColorValue("#F8F9FA")
+        FillPortions: =0
+        Height: =20
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =16
+        LayoutMinHeight: =16
+        LayoutMinWidth: =12
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Visible: =!IsEmpty(colPeopleAllocated)
+        Children:
+        Container30_1:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        DropShadow: =DropShadow.None
+        Height: =24
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutGap: =4
+        LayoutMinHeight: =10
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Children:
+        HtmlText3_18:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        FillPortions: =1
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        ="<div style='padding: 0; margin: 0;font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; display: flex; align-items: center;'>Time fees Totals</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =12
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =160
+        HtmlText3_19:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>{NoDecimalPlaces(varWorkstreamCalculations.avgRPH)}</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =60
+        HtmlText3_20:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>{NoDecimalPlaces(varWorkstreamCalculations.avgSTD)}</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =60
+        HtmlText3_21:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>{Percentage(varWorkstreamCalculations.avgReal)}</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =60
+        Container28:
+        Control: GroupContainer@1.5.0
+        Variant: ManualLayout
+        Properties:
+        AlignInContainer: =AlignInContainer.Start
+        BorderColor: =ColorValue("#E1DFDD")
+        BorderThickness: =1
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        Height: =21
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Children:
+        Gallery8_1:
+        Control: Gallery@2.15.0
+        Variant: Horizontal
+        Properties:
+        BorderColor: =RGBA(245, 245, 245, 1)
+        Height: =20
+        Items: |-
+        =Switch(locPhasing,
+        "weekly",
+        AddColumns(GroupBy(colWorkstreamTimeline, WeekNum, YearNum, TimelineGrouped), MonthNum, 0, Value, 0),
+        "daily",
+        AddColumns(GroupBy(colWorkstreamTimeline, Value, YearNum, TimelineGrouped), MonthNum, 0, WeekNum, 0),
+        "monthly",
+        AddColumns(GroupBy(colWorkstreamTimeline, MonthNum, YearNum, TimelineGrouped), WeekNum, 0, Value, 0)
+        )
+        /*
+        Switch(locPhasing, "weekly",
+        Sequence(varWorkstreamSelected.NumberOfWeeks),
+        "daily", Sequence(varWorkstreamSelected.NumberOfWeeks5),
+        "monthly",
+        Sequence(DateDiff(varWorkstreamSelected.WorkstreamStart, DateAdd(varWorkstreamSelected.WorkstreamStart, varWorkstreamSelected.NumberOfWeeks7, TimeUnit.Days), TimeUnit.Months)+1, Month(varWorkstreamSelected.WorkstreamStart), 1)
+        )
+        /
+        TemplatePadding: =0
+        TemplateSize: =58
+        Width: =Self.TemplateWidthSelf.AllItemsCount
+        X: =sliderHorizontalScroll.Value-1
+        Children:
+        HtmlText3_23:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>
+        {
+        Switch(locPhasing,
+        "weekly",
+        Sum(Filter(colAllocatedHours, WeekNum = ThisItem.WeekNum, YearNum = ThisItem.YearNum), HoursWorked),
+        "monthly",
+        Sum(Filter(colAllocatedHours, MonthNum = ThisItem.MonthNum, YearNum = ThisItem.YearNum), HoursWorked),
+        "daily",
+        Sum(Filter(colAllocatedHours, Value = ThisItem.Value, YearNum = ThisItem.YearNum), HoursWorked))
+        }
+        </div>"
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =50
+        X: =4
+        Y: =(Parent.TemplateHeight-Self.Height)/2
+        Container25_3:
+        Control: GroupContainer@1.5.0
+        Variant: AutoLayout
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        DropShadow: =DropShadow.None
+        FillPortions: =0
+        Height: =12
+        LayoutAlignItems: =LayoutAlignItems.Center
+        LayoutDirection: =LayoutDirection.Horizontal
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        RadiusBottomLeft: =0
+        RadiusBottomRight: =0
+        RadiusTopLeft: =0
+        RadiusTopRight: =0
+        Width: =165
+        Children:
+        HtmlText3_25:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>{varWorkstreamCalculations.totalHours}</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =55
+        HtmlText3_26:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>{OneDecimalPlace(DisplayThousand(varWorkstreamCalculations.totalTimeFees))}</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =55
+        HtmlText3_27:
+        Control: HtmlViewer@2.1.0
+        Properties:
+        AlignInContainer: =AlignInContainer.Center
+        AutoHeight: =true
+        DisabledBorderColor: =RGBA(161, 159, 157, 1)
+        Font: =Font.'Segoe UI'
+        Height: =12
+        HtmlText: |-
+        =$"<div style='text-align: center; font-size: 9px; color: black; text-transform: uppercase; font-weight: 500; '>{Percentage(varWorkstreamCalculations.timeGM)}</div>"
+        LayoutMinHeight: =16
+        LayoutMinWidth: =16
+        PaddingBottom: =0
+        PaddingLeft: =0
+        PaddingRight: =0
+        PaddingTop: =0
+        Width: =55

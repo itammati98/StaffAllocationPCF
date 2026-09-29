@@ -1,0 +1,156 @@
+// ============================================================================
+//  PeopleAllocation.TimeFeesGrid - dummy data
+//  ---------------------------------------------------------------------------
+//  Three collections the component binds to. Paste this whole file into
+//  App.OnStart (or the OnSelect of a "Load demo data" button), then open the
+//  screen holding the component: its datasets refresh when the collections
+//  change.
+//
+//  Component properties to set:
+//      People          = colPeopleAllocated
+//      Bookings        = colAllocatedHours
+//      Timeline        = colWorkstreamTimeline
+//      WorkstreamStart = Date(2026,1,5)
+//      NumberOfWeeks   = 4
+//      Phasing         = Weekly        PricingMethod = Rate card
+//      ReadOnly        = false
+//
+//  Conventions the component relies on (keep them in your own data too):
+//      Timeline.Weekday   1 = Monday .. 7 = Sunday; 6 and 7 never take hours
+//      Timeline.Value     1-based working-day ordinal; WeekNum = RoundUp(Value/5)
+//      Bookings           one row per person per DAY, hours spread day by day
+//                         (a 20h week is stored as 8, 8, 4 - not one 20h row)
+//
+//  What this data shows: six people across three job levels (sorted by
+//  JobLevelOrder), a half-booked week, a full 40h week, a single-day booking,
+//  one over-capacity week (flagged amber), one person with no hours at all,
+//  and one booking outside the workstream window (kept and reported in the
+//  toolbar instead of being dropped).
+// ============================================================================
+
+
+// ---------------------------------------------------------------------------
+//  1. colPeopleAllocated - one row per person on the workstream
+// ---------------------------------------------------------------------------
+ClearCollect(colPeopleAllocated,
+    Table(
+        { Name: "Alice Adams",  JobLevel: "Snr Consultant",   Team: "Consulting", CostRate: 55, FeeRate: 190, RPH: 180, Realisation: 180 / 190, JobLevelOrder: 0, IsToBeAdded: false, CurrencyID: "GBP" },
+        { Name: "Frank Foster", JobLevel: "Snr Consultant",   Team: "Delivery",   CostRate: 55, FeeRate: 190, RPH: 175, Realisation: 175 / 190, JobLevelOrder: 0, IsToBeAdded: false, CurrencyID: "GBP" },
+        { Name: "Bob Brown",    JobLevel: "Consultant",       Team: "Consulting", CostRate: 45, FeeRate: 150, RPH: 140, Realisation: 140 / 150, JobLevelOrder: 1, IsToBeAdded: false, CurrencyID: "GBP" },
+        { Name: "Dan Davies",   JobLevel: "Consultant",       Team: "Delivery",   CostRate: 45, FeeRate: 150, RPH: 150, Realisation: 150 / 150, JobLevelOrder: 1, IsToBeAdded: false, CurrencyID: "GBP" },
+        { Name: "Carol Clarke", JobLevel: "Research Analyst", Team: "Research",   CostRate: 30, FeeRate: 95,  RPH: 90,  Realisation: 90 / 95,   JobLevelOrder: 2, IsToBeAdded: false, CurrencyID: "GBP" },
+        { Name: "Erin Evans",   JobLevel: "Research Analyst", Team: "Research",   CostRate: 30, FeeRate: 95,  RPH: 95,  Realisation: 95 / 95,   JobLevelOrder: 2, IsToBeAdded: false, CurrencyID: "GBP" }
+        // Uncomment to preview the "new" tag the grid shows for a row the app has
+        // not resolved yet (Add staff creates such a row at run time):
+        // , { Name: "Georgia Grant", JobLevel: "Consultant", Team: "Consulting", CostRate: 45, FeeRate: 150, RPH: 145, Realisation: 145 / 150, JobLevelOrder: 1, IsToBeAdded: true, CurrencyID: "GBP" }
+    )
+);
+
+
+// ---------------------------------------------------------------------------
+//  2. colWorkstreamTimeline - four weeks of Monday to Friday working days
+//     starting Monday 5 January 2026 (20 working days, weekend rows omitted)
+// ---------------------------------------------------------------------------
+ClearCollect(colWorkstreamTimeline,
+    Table(
+        { Date: Date(2026, 1, 5),  Value: 1,  Weekday: 1, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 6),  Value: 2,  Weekday: 2, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 7),  Value: 3,  Weekday: 3, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 8),  Value: 4,  Weekday: 4, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 9),  Value: 5,  Weekday: 5, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 12), Value: 6,  Weekday: 1, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 13), Value: 7,  Weekday: 2, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 14), Value: 8,  Weekday: 3, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 15), Value: 9,  Weekday: 4, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 16), Value: 10, Weekday: 5, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 19), Value: 11, Weekday: 1, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 20), Value: 12, Weekday: 2, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 21), Value: 13, Weekday: 3, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 22), Value: 14, Weekday: 4, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 23), Value: 15, Weekday: 5, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 26), Value: 16, Weekday: 1, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 27), Value: 17, Weekday: 2, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 28), Value: 18, Weekday: 3, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 29), Value: 19, Weekday: 4, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Date: Date(2026, 1, 30), Value: 20, Weekday: 5, WeekNum: 4, MonthNum: 1, YearNum: 2026 }
+    )
+);
+
+
+// ---------------------------------------------------------------------------
+//  3. colAllocatedHours - booked hours, one row per person per working day
+//     (week totals in brackets; read the Hours column of the grid)
+// ---------------------------------------------------------------------------
+ClearCollect(colAllocatedHours,
+    Table(
+        // Alice Adams - week 1 = 20h, week 2 = 40h
+        { Name: "Alice Adams", Date: Date(2026, 1, 5),  HoursWorked: 8, Value: 1,  Weekday: 1, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 6),  HoursWorked: 8, Value: 2,  Weekday: 2, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 7),  HoursWorked: 4, Value: 3,  Weekday: 3, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 12), HoursWorked: 8, Value: 6,  Weekday: 1, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 13), HoursWorked: 8, Value: 7,  Weekday: 2, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 14), HoursWorked: 8, Value: 8,  Weekday: 3, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 15), HoursWorked: 8, Value: 9,  Weekday: 4, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        { Name: "Alice Adams", Date: Date(2026, 1, 16), HoursWorked: 8, Value: 10, Weekday: 5, WeekNum: 2, MonthNum: 1, YearNum: 2026 },
+        // Bob Brown - week 1 = 40h, week 3 = 16h
+        { Name: "Bob Brown",   Date: Date(2026, 1, 5),  HoursWorked: 8, Value: 1,  Weekday: 1, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Bob Brown",   Date: Date(2026, 1, 6),  HoursWorked: 8, Value: 2,  Weekday: 2, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Bob Brown",   Date: Date(2026, 1, 7),  HoursWorked: 8, Value: 3,  Weekday: 3, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Bob Brown",   Date: Date(2026, 1, 8),  HoursWorked: 8, Value: 4,  Weekday: 4, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Bob Brown",   Date: Date(2026, 1, 9),  HoursWorked: 8, Value: 5,  Weekday: 5, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Bob Brown",   Date: Date(2026, 1, 19), HoursWorked: 8, Value: 11, Weekday: 1, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Name: "Bob Brown",   Date: Date(2026, 1, 20), HoursWorked: 8, Value: 12, Weekday: 2, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        // Frank Foster - a single part day, plus one booking outside the window
+        { Name: "Frank Foster", Date: Date(2026, 1, 8), HoursWorked: 7.5, Value: 4, Weekday: 4, WeekNum: 1, MonthNum: 1, YearNum: 2026 },
+        { Name: "Frank Foster", Date: Date(2026, 4, 2), HoursWorked: 6,   Value: 0, Weekday: 0, WeekNum: 0, MonthNum: 4, YearNum: 2026 },
+        // Carol Clarke - week 3 = 20h
+        { Name: "Carol Clarke", Date: Date(2026, 1, 19), HoursWorked: 8, Value: 11, Weekday: 1, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Name: "Carol Clarke", Date: Date(2026, 1, 20), HoursWorked: 8, Value: 12, Weekday: 2, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        { Name: "Carol Clarke", Date: Date(2026, 1, 21), HoursWorked: 4, Value: 13, Weekday: 3, WeekNum: 3, MonthNum: 1, YearNum: 2026 },
+        // Dan Davies - week 4 = 45h, deliberately above the 40h capacity so the
+        // period shows the over-capacity flag
+        { Name: "Dan Davies",   Date: Date(2026, 1, 26), HoursWorked: 9, Value: 16, Weekday: 1, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Name: "Dan Davies",   Date: Date(2026, 1, 27), HoursWorked: 9, Value: 17, Weekday: 2, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Name: "Dan Davies",   Date: Date(2026, 1, 28), HoursWorked: 9, Value: 18, Weekday: 3, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Name: "Dan Davies",   Date: Date(2026, 1, 29), HoursWorked: 9, Value: 19, Weekday: 4, WeekNum: 4, MonthNum: 1, YearNum: 2026 },
+        { Name: "Dan Davies",   Date: Date(2026, 1, 30), HoursWorked: 9, Value: 20, Weekday: 5, WeekNum: 4, MonthNum: 1, YearNum: 2026 }
+        // Erin Evans has no bookings on purpose: an empty row still shows her
+        // rates and can be booked directly in the grid.
+    )
+);
+
+
+// ---------------------------------------------------------------------------
+//  4. OPTIONAL - replace section 2 with a generated 12 week timeline
+//     Use this instead of the literal table above when you want a longer
+//     window; the bookings in section 3 stay valid (they fall inside it).
+//     gDemoStart also makes a good value for the component's
+//     WorkstreamStart property and NumberOfWeeks = 12.
+// ---------------------------------------------------------------------------
+// Set(gDemoStart, Date(2026, 1, 5));
+// ClearCollect(colDemoDays,
+//     ForAll(
+//         Filter(
+//             Sequence(12 * 7),
+//             Weekday(DateAdd(gDemoStart, Value - 1, TimeUnit.Days), StartOfWeek.Monday) <= 5
+//         ),
+//         { Date: DateAdd(gDemoStart, Value - 1, TimeUnit.Days) }
+//     )
+// );
+// ClearCollect(colWorkstreamTimeline,
+//     ForAll(
+//         colDemoDays As day,
+//         With(
+//             { _ordinal: CountRows(Filter(colDemoDays, Date <= day.Date)) },
+//             {
+//                 Date: day.Date,
+//                 Value: _ordinal,
+//                 Weekday: Weekday(day.Date, StartOfWeek.Monday),
+//                 WeekNum: RoundUp(_ordinal / 5, 0),
+//                 MonthNum: Month(day.Date),
+//                 YearNum: Year(day.Date)
+//             }
+//         )
+//     )
+// );
+// Clear(colDemoDays)
