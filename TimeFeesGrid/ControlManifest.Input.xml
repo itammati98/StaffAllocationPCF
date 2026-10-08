@@ -7,7 +7,7 @@
     with colAllocatedHours as the editable bookings. The three collections are bound as datasets;
     the component publishes every change back to the app through the Changes / ChangesJson outputs.
   -->
-  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.2.1"
+  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.3.1"
            display-name-key="TimeFeesGrid_Display" description-key="TimeFeesGrid_Desc"
            control-type="virtual">
 
@@ -16,10 +16,9 @@
     <!--
       Canvas apps populate a dataset property by NAME: each property-set below is matched against a
       column of the bound table with the same name, and a name with no match delivers nothing. So
-      these names must be the collection's column names, and Dataverse additionally requires every
-      property-set name to be unique across the whole control - which is why the allocations table
-      exposes PersonName / AllocationDate (bind AddColumns(colAllocatedHours, PersonName, Name,
-      AllocationDate, Date)) instead of the Name / Date it shares with the other two collections.
+      every property-set name is a column name of the collection bound to that dataset - and because
+      Dataverse requires the names to be unique across the whole control, the bookings table reads
+      the aliases PersonName / AllocationDate with an AddColumns binding (see below).
     -->
 
     <!-- colPeopleAllocated -->
@@ -36,8 +35,12 @@
       <property-set name="CurrencyID" display-name-key="PS_CurrencyId" of-type="SingleLine.Text" usage="input" />
     </data-set>
 
-    <!-- colAllocatedHours: only the booked hours are read; the period fields the component writes
-         back (Value, Weekday, WeekNum, MonthNum, YearNum) are derived from the timeline. -->
+    <!-- colAllocatedHours. Dataverse requires every property-set name to be unique across the whole
+         control, and colAllocatedHours shares Name and Date with the other two collections, so this
+         dataset reads the aliases: bind Bookings = AddColumns(colAllocatedHours, PersonName, Name,
+         AllocationDate, Date). Only the person, the date and the booked hours are read; the period
+         fields the component writes back (Value, Weekday, WeekNum, MonthNum, YearNum) are derived
+         from the timeline. -->
     <data-set name="gridAllocations" display-name-key="GridAllocations_Display" description-key="GridAllocations_Desc">
       <property-set name="PersonName" display-name-key="PS_AllocationPersonName" of-type="SingleLine.Text" usage="input" />
       <property-set name="AllocationDate" display-name-key="PS_AllocationDate" of-type="DateAndTime.DateOnly" usage="input" />
@@ -76,6 +79,21 @@
               of-type="TwoOptions" usage="input" default-value="false" />
     <property name="showNotifications" display-name-key="ShowNotifications_Display" description-key="ShowNotifications_Desc"
               of-type="TwoOptions" usage="input" default-value="true" />
+
+    <!-- Colours. Every value is a CSS colour the maker can paste in the property pane: #rgb, #rrggbb
+         or an rgb()/rgba() function. A value the component cannot read falls back to the default. -->
+    <property name="accentColor" display-name-key="AccentColor_Display" description-key="AccentColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#0f6cbd" />
+    <property name="backgroundColor" display-name-key="BackgroundColor_Display" description-key="BackgroundColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#ffffff" />
+    <property name="headerColor" display-name-key="HeaderColor_Display" description-key="HeaderColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#f3f2f1" />
+    <property name="textColor" display-name-key="TextColor_Display" description-key="TextColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#201f1e" />
+    <property name="overCapacityColor" display-name-key="OverCapacityColor_Display" description-key="OverCapacityColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#fff8e1" />
+    <property name="overCapacityTextColor" display-name-key="OverCapacityTextColor_Display" description-key="OverCapacityTextColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#8a6116" />
 
     <!-- Raised when the user asks the app to add or to remove a person -->
     <!-- (Custom events are a preview authoring feature and were removed for stability; the grid

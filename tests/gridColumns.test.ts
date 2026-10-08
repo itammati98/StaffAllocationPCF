@@ -85,13 +85,23 @@ describe('density layouts', () => {
     expect(layout.slice(0, spacerIndex).some((column) => column.kind === 'period')).toBe(true);
   });
 
-  it('pins the person column left and the row totals right, with cumulative offsets', () => {
+  it('pins the person and rate columns left and the row totals right, with cumulative offsets', () => {
     const layout = buildColumnLayout(weekly, 'comfortable');
     const widths = DENSITY.comfortable.widths;
     const byKind = (kind: CellKind): ColumnLayout | undefined => layout.find((column) => column.kind === kind);
 
+    // Only the timeline scrolls: the person column and the rates stay against the left edge.
+    expect(layout.filter((column) => column.stickyLeft !== undefined).map((column) => column.kind)).toEqual([
+      'identity',
+      'rph',
+      'std',
+      'real',
+    ]);
     expect(layout[0]).toMatchObject({ kind: 'identity', stickyLeft: 0 });
-    expect(stickyLeftWidth(layout)).toBe(widths.identity);
+    expect(byKind('rph')?.stickyLeft).toBe(widths.identity);
+    expect(byKind('std')?.stickyLeft).toBe(widths.identity + widths.rph);
+    expect(byKind('real')?.stickyLeft).toBe(widths.identity + widths.rph + widths.std);
+    expect(stickyLeftWidth(layout)).toBe(widths.identity + widths.rph + widths.std + widths.real);
 
     const hours = byKind('totalHours');
     const fee = byKind('fee');
@@ -103,9 +113,18 @@ describe('density layouts', () => {
     expect(layout.filter((column) => column.kind === 'period').every((column) => column.stickyLeft === undefined)).toBe(true);
   });
 
+  it('marks the pinned columns that face the scrolling timeline', () => {
+    const comfortable = buildColumnLayout(weekly, 'comfortable');
+    expect(comfortable.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['real', 'totalHours']);
+
+    const narrow = buildColumnLayout(weekly, 'narrow');
+    expect(narrow.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['rph']);
+  });
+
   it('leaves the totals scrolling with the timeline on a narrow container', () => {
     const layout = buildColumnLayout(weekly, 'narrow');
     expect(stickyRightWidth(layout)).toBe(0);
-    expect(stickyLeftWidth(layout)).toBe(DENSITY.narrow.widths.identity);
+    // The narrow density drops the STD and REAL% columns, so only the rates it keeps are pinned.
+    expect(stickyLeftWidth(layout)).toBe(DENSITY.narrow.widths.identity + DENSITY.narrow.widths.rph);
   });
 });

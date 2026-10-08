@@ -4,25 +4,21 @@
  * Everything is scoped under .tfg-root because the host injects this file into the app document.
  * Layout: a flex column — toolbar, status, grid viewport, hint. The grid viewport is the only
  * scrolling element: native overflow scrolling with a visible scrollbar replaces the canvas app's
- * horizontal slider, and the person column, header row and totals row stay pinned.
+ * horizontal slider, and the person/rate columns, header row and totals row stay pinned.
+ *
+ * The palette (accent, background, header, text and the over-capacity pair) is a set of studio
+ * properties; the component applies them to .tfg-root as CSS custom properties from
+ * src/colors.ts, which is the only place their defaults live. The tints below are the fixed
+ * neutrals that sit on top of that palette.
  */
 
 .tfg-root {
-  --tfg-bg: #ffffff;
   --tfg-bg-subtle: #faf9f8;
-  --tfg-bg-head: #f3f2f1;
-  --tfg-bg-foot: #f3f2f1;
   --tfg-hover: #f8f8f7;
-  --tfg-text: #201f1e;
   --tfg-text-muted: #605e5c;
   --tfg-text-soft: #8a8886;
   --tfg-border: #edebe9;
   --tfg-border-strong: #d2d0ce;
-  --tfg-accent: #0f6cbd;
-  --tfg-accent-soft: #eff6fc;
-  --tfg-active-row: #f3f9fd;
-  --tfg-warn-bg: #fff8e1;
-  --tfg-warn-text: #8a6116;
   --tfg-danger: #a4262c;
   --tfg-radius: 4px;
   --tfg-row-h: 40px;
@@ -121,7 +117,7 @@
 .tfg-seg[aria-checked="true"] {
   background: var(--tfg-accent-soft);
   color: var(--tfg-accent);
-  box-shadow: inset 0 0 0 1px rgba(15, 108, 189, 0.35);
+  box-shadow: inset 0 0 0 1px var(--tfg-accent);
 }
 
 .tfg-seg:focus-visible,
@@ -199,8 +195,7 @@
 }
 
 .tfg-btn--primary:hover:not(:disabled) {
-  background: #0d5ea5;
-  border-color: #0d5ea5;
+  filter: brightness(0.92);
 }
 
 .tfg-btn--small {
@@ -280,7 +275,7 @@
   font-size: 11.5px;
   border-bottom: 1px solid var(--tfg-border);
   background: var(--tfg-accent-soft);
-  color: #0b4f8a;
+  color: var(--tfg-accent);
 }
 
 .tfg-status--warning {
@@ -526,8 +521,9 @@
   color: var(--tfg-text-soft);
 }
 
-.tfg-td[data-over],
-.tfg-tf[data-over] {
+/* Over-capacity hours are flagged cell by cell. A totals cell adds a whole column up across
+   everyone, so it is never compared with one person's capacity and never takes this fill. */
+.tfg-td[data-over] {
   background: var(--tfg-warn-bg);
   color: var(--tfg-warn-text);
   font-weight: 600;
@@ -537,19 +533,26 @@
   color: var(--tfg-text-muted);
 }
 
-/* Person column and the pinned totals columns. */
+/* Person and rate columns pinned left, totals pinned right; the timeline is what scrolls. */
 .tfg-sticky-left {
   position: sticky;
   left: 0;
   z-index: 3;
   background: var(--tfg-bg);
-  border-right: 1px solid var(--tfg-border-strong);
 }
 
 .tfg-sticky-right {
   position: sticky;
   z-index: 3;
   background: var(--tfg-bg);
+}
+
+/* The pinned cell that faces the scrolling timeline carries the heavier border. */
+.tfg-sticky-left.tfg-sticky-edge {
+  border-right-color: var(--tfg-border-strong);
+}
+
+.tfg-sticky-right.tfg-sticky-edge {
   border-left: 1px solid var(--tfg-border-strong);
 }
 
@@ -579,12 +582,12 @@
 }
 
 .tfg-table td[data-active][data-over] {
-  background: #fdeec9;
+  background: var(--tfg-warn-strong);
 }
 
 .tfg-table:not(:focus) td[data-active] {
   background: var(--tfg-accent-soft);
-  box-shadow: inset 0 0 0 1px rgba(15, 108, 189, 0.45);
+  box-shadow: inset 0 0 0 1px var(--tfg-accent);
 }
 
 /* ---------------------------------------------------------- identity cell */
@@ -610,7 +613,7 @@
   font-weight: 700;
   letter-spacing: 0.3px;
   color: #ffffff;
-  background: #0f6cbd;
+  background: var(--tfg-accent);
 }
 
 .tfg-avatar[data-tone="1"] { background: #2b7d3f; }

@@ -1,8 +1,16 @@
 import * as React from 'react';
 import { IInputs, IOutputs } from './generated/ManifestTypes';
 import { TimeFeesGridApp } from './src/components/TimeFeesGridApp';
-import { AdapterDatasets, clampHoursPerDay, clampWeeks, readSnapshot, snapshotSignature } from './src/datasetAdapter';
-import { buildOutput, createStore, toDate, toNumber } from './src/engine';
+import {
+  AdapterDatasets,
+  clampHoursPerDay,
+  clampWeeks,
+  outputSignature,
+  readSnapshot,
+  snapshotSignature,
+} from './src/datasetAdapter';
+import { colorsEqual, DEFAULT_COLORS, GridColors, readColors } from './src/colors';
+import { toDate, toNumber } from './src/engine';
 import { GridHostInputs, GridOutput, GridSnapshot, Phasing, PricingMethod, TimeFeesGridAppProps } from './src/types';
 
 /** Enum option order must match the manifest: Daily, Weekly, Monthly. */
@@ -67,8 +75,14 @@ const CHANGES_SCHEMA_JSON = JSON.stringify(CHANGES_SCHEMA);
 export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IOutputs> {
   private notifyOutputChanged: () => void = () => undefined;
   private latest: GridOutput | null = null;
+  /** Cached so a re-read of unchanged outputs is the same object and never fires OnChange again. */
+  private outputs: IOutputs | null = null;
   private lastSignature = '';
+  /** Signature of the payload the component last published, i.e. of what the host echoes back. */
+  private echoSignature = '';
   private snapshotVersion = 0;
+  private snapshot: GridSnapshot | null = null;
+  private colors: GridColors = DEFAULT_COLORS;
 
   public init(context: ComponentFramework.Context<IInputs>, notifyOutputChanged: () => void): void {
     this.notifyOutputChanged = notifyOutputChanged;
@@ -76,14 +90,34 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
 
   public updateView(context: ComponentFramework.Context<IInputs>): React.ReactElement {
     const host = this.readHostInputs(context);
-    const snapshot = readSnapshot(this.readDatasets(context), host);
+    const parsed = readSnapshot(this.readDatasets(context), host);
+    const signature = snapshotSignature(parsed);
 
-    const signature = snapshotSignature(snapshot);
+    // A canvas app re-delivers every bound dataset whenever any of its collections changes, so most
+    // updateView calls carry data the grid is already showing. Only a snapshot the grid has not seen
+    // - and that is not its own published change coming back - rebases the editor state; anything
+    // else reuses the previous snapshot, which keeps the props (and so the rendered grid) stable.
+    let rebased = false;
     if (signature !== this.lastSignature) {
       this.lastSignature = signature;
-      this.snapshotVersion += 1;
-      // The host pushed new data; republish from it so the outputs never describe stale rows.
-      this.latest = initialOutput(snapshot);
+      if (signature === this.echoSignature) {
+        // The host wrote the last change back into its collections: the grid already holds it.
+        this.echoSignature = '';
+      } else {
+        rebased = true;
+        this.snapshotVersion += 1;
+        // The host owns the data it re-delivered, and screen navigation re-delivers it constantly,
+        // so nothing is published here: the app's OnChange must not fire just because a screen was
+        // shown. The outputs keep describing the last change the user made, and the next edit
+        // republishes from the rebased state.
+        this.echoSignature = '';
+      }
+    }
+
+    let snapshot = this.snapshot;
+    if (rebased || snapshot === null) {
+      snapshot = parsed;
+      this.snapshot = parsed;
     }
 
     const appProps: TimeFeesGridAppProps = {
@@ -97,12 +131,14 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
 
   public getOutputs(): IOutputs {
     // `dataSchema` is declared as a hidden input and echoed back with the schema so that canvas
-    // apps can type-check the object output; the platform reads it from here.
-    return {
+    // apps can type-check the object output; the platform reads it from here. The object is kept
+    // so that re-reading unchanged outputs cannot be mistaken for a new change.
+    this.outputs ??= {
       dataSchema: CHANGES_SCHEMA_JSON,
       changes: this.latest ?? undefined,
       changesJson: this.latest === null ? '' : JSON.stringify(this.latest),
     } as IOutputs;
+    return this.outputs;
   }
 
   /** Canvas apps ask for the schema before the control initialises. */
@@ -112,10 +148,18 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
 
   public destroy(): void {
     this.latest = null;
+    this.outputs = null;
+    this.snapshot = null;
   }
 
   private handleChange = (output: GridOutput): void => {
     this.latest = output;
+    this.outputs = null;
+    // Remember what this change looks like once the app has written it into its collections, so
+    // the dataset refresh that follows is recognised as an echo instead of new data.
+    if (this.snapshot !== null) {
+      this.echoSignature = outputSignature(output, this.snapshot);
+    }
     this.notifyOutputChanged();
   };
 
@@ -134,6 +178,14 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
     const weeks = toNumber(parameters.numberOfWeeks?.raw);
     const hoursPerDay = toNumber(parameters.hoursPerDay?.raw);
     const workstreamStart = parameters.workstreamStart;
+    // The palette is only replaced when a colour actually changed, so the React app keeps its
+    // memoised style object across the host's repeated dataset pushes.
+    const colors = readColors(
+      (name) => (parameters as unknown as Record<string, { raw?: unknown } | undefined>)[name]?.raw,
+    );
+    if (!colorsEqual(colors, this.colors)) {
+      this.colors = colors;
+    }
     return {
       workstreamStart: toDate(workstreamStart ? workstreamStart.raw : null),
       numberOfWeeks: weeks > 0 ? clampWeeks(weeks) : 6,
@@ -145,19 +197,9 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       showNotifications: parameters.showNotifications?.raw === undefined || parameters.showNotifications?.raw === null
         ? true
         : readBoolean(parameters.showNotifications.raw),
+      colors: this.colors,
     };
   }
-}
-
-function initialOutput(snapshot: GridSnapshot): GridOutput {
-  const payload = buildOutput(createStore(snapshot.allocations), snapshot.people, snapshot.timeline);
-  return {
-    revision: 0,
-    action: 'load',
-    personName: '',
-    allocations: payload.allocations,
-    people: payload.people,
-  };
 }
 
 /** Enum properties arrive as an option index or as a label, depending on the host. */

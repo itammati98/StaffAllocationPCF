@@ -13,6 +13,8 @@
  * Allocations coming from the host are resolved from the `Name` column to a person key.
  */
 
+import type { GridColors } from './colors';
+
 /** How the workstream timeline is bucketed into editable columns. */
 export type Phasing = 'daily' | 'weekly' | 'monthly';
 
@@ -21,10 +23,10 @@ export type PricingMethod = 'manualRate' | 'realisationAdjustment';
 
 /**
  * Actions reported to the host so it knows why the data changed. The two request actions are
- * raised because the component defers adding and removing people to the app.
+ * raised because the component defers adding and removing people to the app. Nothing is published
+ * when the host merely re-delivers the datasets, so navigating to a screen never fires OnChange.
  */
 export type GridAction =
-  | 'load'
   | 'hoursChanged'
   | 'hoursCleared'
   | 'ratesChanged'
@@ -155,6 +157,8 @@ export interface GridHostInputs {
   readOnly: boolean;
   /** False hides the dataset warnings the grid would otherwise show above the timeline. */
   showNotifications: boolean;
+  /** Studio-configured palette, applied to the grid root as CSS custom properties. */
+  colors: GridColors;
 }
 
 /** One immutable snapshot of the host datasets. */

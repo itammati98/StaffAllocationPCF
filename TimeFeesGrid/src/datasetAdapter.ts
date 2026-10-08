@@ -11,16 +11,16 @@
  */
 
 import {
-  allocationKey,
   buildTimeline,
   isWorkingDay,
   realisationFromRph,
+  round6,
   toDate,
   toDateKey,
   toNumber,
   weekdayOf,
 } from './engine';
-import type { AllocationEntry, GridHostInputs, GridSnapshot, PersonRow, TimelineDay } from './types';
+import type { AllocationEntry, GridHostInputs, GridOutput, GridSnapshot, PersonRow, TimelineDay } from './types';
 
 type DataSet = ComponentFramework.PropertyTypes.DataSet;
 type Column = ComponentFramework.PropertyHelper.DataSetApi.Column;
@@ -77,17 +77,18 @@ export function readSnapshot(datasets: AdapterDatasets, host: GridHostInputs): G
 
   const people = readPeople(datasets.people, warnings);
   const allocations = readAllocations(datasets.allocations, people, warnings);
-  const hostTimeline = readTimeline(datasets.timeline, warnings);
+  const timelineRead = readTimeline(datasets.timeline, warnings);
 
-  let timeline = hostTimeline;
-  let timelineFromHost = hostTimeline.length > 0;
+  let timeline = timelineRead.days;
+  const timelineFromHost = timeline.length > 0;
   if (!timelineFromHost) {
     const weeks = clampWeeks(host.numberOfWeeks);
     const start = generatedTimelineStart(host, allocations);
     timeline = buildTimeline(start, weeks);
-    timelineFromHost = false;
     warnings.add(
-      `The timeline dataset is empty, so the grid generated a ${weeks}-week timeline starting ${toDateKey(start)}.`
+      timelineRead.rows > 0
+        ? `The timeline table's ${count(timelineRead.rows, 'row')} could not be read, so the grid generated a ${weeks}-week timeline starting ${toDateKey(start)}.`
+        : `The timeline dataset is empty, so the grid generated a ${weeks}-week timeline starting ${toDateKey(start)}.`
     );
   }
 
@@ -108,15 +109,91 @@ export function readSnapshot(datasets: AdapterDatasets, host: GridHostInputs): G
 }
 
 /**
- * A cheap rolling (FNV-1a, 32-bit) hash over the parsed data. Two snapshots share a signature
- * exactly when their people, timeline and allocations are identical, so the component can skip
- * rebasing the editor state when the host re-pushes the same data.
+ * A cheap rolling (FNV-1a, 32-bit) hash over the parsed data, used for two things:
+ *
+ * 1. skipping work when the host re-pushes the same data (canvas re-delivers a dataset whenever any
+ *    collection changes, even when this one did not), and
+ * 2. recognising the host echoing back what the component just published, so writing a change into
+ *    the collections does not rebase the editor state and make the grid flicker.
+ *
+ * It is order independent: the same people, timeline and booked hours hash the same however the host
+ * orders its rows, because a canvas `Collect`/`ClearCollect` is free to reorder them. Booked hours are
+ * keyed by person name and date rather than by record id, because the published payload carries names
+ * and the host resolves them back to ids.
  */
 export function snapshotSignature(snapshot: GridSnapshot): string {
+  const names = new Map<string, string>();
+  for (const person of snapshot.people) names.set(person.key, person.name);
+  return contentSignature(snapshot.people, snapshot.timeline, snapshot.allocations, names);
+}
+
+/**
+ * Signature of what the component last published, in the same canonical form as
+ * `snapshotSignature`. When the host writes the payload into its collections, the snapshot it
+ * delivers back hashes to exactly this value.
+ */
+export function outputSignature(output: GridOutput, snapshot: GridSnapshot): string {
+  const names = new Map<string, string>();
+  const keyByName = new Map<string, string>();
+  for (const person of snapshot.people) {
+    names.set(person.key, person.name);
+    if (!keyByName.has(person.name)) keyByName.set(person.name, person.key);
+  }
+
+  const people: SignaturePerson[] = output.people.map((person) => ({
+    key: keyByName.get(person.Name) ?? person.Name,
+    name: person.Name,
+    jobLevel: person.JobLevel,
+    team: person.Team,
+    costRate: person.CostRate,
+    feeRate: person.FeeRate,
+    rph: person.RPH,
+    realisation: person.Realisation,
+    jobLevelOrder: person.JobLevelOrder,
+    isToBeAdded: person.IsToBeAdded,
+    currencyId: person.CurrencyID,
+  }));
+
+  const allocations = output.allocations.map((row) => ({
+    personKey: keyByName.get(row.Name) ?? row.Name,
+    dateKey: row.Date,
+    hours: row.HoursWorked,
+  }));
+
+  return contentSignature(people, snapshot.timeline, allocations, names);
+}
+
+/** The fields of one person row that both a parsed snapshot and a published payload carry. */
+interface SignaturePerson {
+  key: string;
+  name: string;
+  jobLevel: string;
+  team: string;
+  costRate: number;
+  feeRate: number;
+  rph: number;
+  realisation: number;
+  jobLevelOrder: number;
+  isToBeAdded: boolean;
+  currencyId: string;
+}
+
+function byText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+/** Hashes people, timeline and summed day hours in an order-independent form. */
+function contentSignature(
+  rows: readonly SignaturePerson[],
+  timeline: readonly TimelineDay[],
+  entries: readonly AllocationEntry[],
+  names: ReadonlyMap<string, string>,
+): string {
   let hash = FNV_OFFSET_BASIS;
 
-  hash = hashText(hash, `people:${snapshot.people.length}`);
-  for (const person of snapshot.people) {
+  const people = [...rows].sort((left, right) => byText(left.key, right.key));
+  hash = hashText(hash, `people:${people.length}`);
+  for (const person of people) {
     hash = hashText(hash, person.key);
     hash = hashText(hash, person.name);
     hash = hashText(hash, person.jobLevel);
@@ -130,8 +207,9 @@ export function snapshotSignature(snapshot: GridSnapshot): string {
     hash = hashText(hash, person.isToBeAdded ? '1' : '0');
   }
 
-  hash = hashText(hash, `timeline:${snapshot.timeline.length}`);
-  for (const day of snapshot.timeline) {
+  const days = [...timeline].sort((left, right) => byText(left.dateKey, right.dateKey));
+  hash = hashText(hash, `timeline:${days.length}`);
+  for (const day of days) {
     hash = hashText(hash, day.dateKey);
     hash = hashNumber(hash, day.value);
     hash = hashNumber(hash, day.weekday);
@@ -141,10 +219,19 @@ export function snapshotSignature(snapshot: GridSnapshot): string {
     hash = hashText(hash, day.isWorkingDay ? '1' : '0');
   }
 
-  hash = hashText(hash, `allocations:${snapshot.allocations.length}`);
-  for (const entry of snapshot.allocations) {
-    hash = hashText(hash, allocationKey(entry.personKey, entry.dateKey));
-    hash = hashNumber(hash, entry.hours);
+  // Summed per person and day, the way `createStore` does, so duplicate or split rows read alike.
+  const hours = new Map<string, number>();
+  for (const entry of entries) {
+    const value = Number(entry.hours);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    const key = `${names.get(entry.personKey) ?? entry.personKey}|${entry.dateKey}`;
+    hours.set(key, round6((hours.get(key) ?? 0) + value));
+  }
+
+  hash = hashText(hash, `allocations:${hours.size}`);
+  for (const key of [...hours.keys()].sort(byText)) {
+    hash = hashText(hash, key);
+    hash = hashNumber(hash, hours.get(key)!);
   }
 
   return (hash >>> 0).toString(16).padStart(8, '0');
@@ -215,7 +302,12 @@ function findColumn(dataset: DataSet | undefined, names: readonly string[]): Col
       continue;
     }
     for (const column of columns) {
-      if (column && normalizeColumnName(column.name) === wanted) {
+      // Column names arrive with optional `[]`/quote delimiters and, from some canvas hosts,
+      // with the table qualifier still attached (`colAllocatedHours.Name`); match the whole
+      // normalised name and the part after the last dot.
+      const name = column ? normalizeColumnName(column.name) : '';
+      const dot = name.lastIndexOf('.');
+      if (name === wanted || (dot >= 0 && name.slice(dot + 1) === wanted)) {
         return column;
       }
     }
@@ -266,61 +358,135 @@ function isTextColumn(column: Column | null): boolean {
 }
 
 /**
- * Raw cell value. `getValue` is guarded; a throwing cell degrades to `undefined`. When it yields
- * null/undefined and the column is text, the formatted value is used instead.
+ * One logical field of a dataset row: the column the host reported for it, when a name matched,
+ * plus every name worth trying directly against a record.
+ *
+ * Canvas hosts do not describe the columns of nonprimary datasets consistently - some report none
+ * at all - so a read tries the reported column first and then the declared aliases, and only
+ * degrades to `undefined` when every name comes back empty.
  */
-function readCell(record: EntityRecord, column: Column | null): unknown {
-  if (!column) {
-    return undefined;
+interface Field {
+  /** The column the host reported, when its name matched a declared alias. */
+  column: Column | null;
+  /** Names to try against a record, most specific first. */
+  names: string[];
+  /** True when a formatted-value fallback is meaningful for this field. */
+  text: boolean;
+}
+
+/** Resolves a field from the host columns plus the names declared in the manifest. */
+function resolveField(dataset: DataSet | undefined, aliases: readonly string[], text: boolean): Field {
+  const column = findColumn(dataset, aliases);
+  const names: string[] = [];
+  const add = (name: string | undefined): void => {
+    const candidate = typeof name === 'string' ? name.trim() : '';
+    if (candidate.length > 0 && !names.includes(candidate)) {
+      names.push(candidate);
+    }
+  };
+  if (column) {
+    add(column.name);
   }
-  let value: unknown;
-  try {
-    value = record.getValue(column.name);
-  } catch {
-    return undefined;
+  for (const alias of aliases) {
+    add(alias);
   }
-  if (value !== null && value !== undefined) {
-    return value;
-  }
-  if (isTextColumn(column)) {
+  return { column, names, text: text || isTextColumn(column) };
+}
+
+/** Raw cell value: the first candidate name that yields something. Never throws. */
+function readCell(record: EntityRecord, field: Field): unknown {
+  for (const name of field.names) {
     try {
-      const formatted = record.getFormattedValue(column.name);
-      if (formatted !== null && formatted !== undefined) {
-        return formatted;
+      const value = record.getValue(name);
+      if (value !== null && value !== undefined) {
+        return value;
       }
     } catch {
-      return undefined;
+      // The host does not know this name; try the next one.
+    }
+  }
+  if (field.text) {
+    for (const name of field.names) {
+      try {
+        const formatted = record.getFormattedValue(name);
+        if (formatted !== null && formatted !== undefined) {
+          return formatted;
+        }
+      } catch {
+        // Same again.
+      }
     }
   }
   return undefined;
 }
 
 /** Cell as a finite number; anything unreadable is 0. */
-function readNumber(record: EntityRecord, column: Column | null): number {
-  const value = toNumber(readCell(record, column));
+function readNumber(record: EntityRecord, field: Field): number {
+  const value = toNumber(readCell(record, field));
   return Number.isFinite(value) ? value : 0;
 }
 
 /** Cell as trimmed text; anything unreadable is ''. */
-function readText(record: EntityRecord, column: Column | null): string {
-  const raw = readCell(record, column);
+function readText(record: EntityRecord, field: Field): string {
+  const raw = readCell(record, field);
   if (typeof raw === 'string') {
     return raw.trim();
   }
   if (typeof raw === 'number' || typeof raw === 'boolean') {
     return String(raw).trim();
   }
-  if (column && !isTextColumn(column)) {
+  for (const name of field.names) {
     try {
-      const formatted = record.getFormattedValue(column.name);
+      const formatted = record.getFormattedValue(name);
       if (typeof formatted === 'string') {
         return formatted.trim();
       }
     } catch {
-      return '';
+      // Ignore and try the next name.
     }
   }
   return '';
+}
+
+/** Column names the host reported, for the diagnostics below. */
+function columnNames(dataset: DataSet | undefined): string[] {
+  if (!dataset) {
+    return [];
+  }
+  try {
+    const columns = dataset.columns;
+    if (!Array.isArray(columns)) {
+      return [];
+    }
+    return columns.map((column) => (column && typeof column.name === 'string' ? column.name : '?'));
+  } catch {
+    return [];
+  }
+}
+
+/** One probe read against the first record, for the diagnostics below. */
+function probeRead(record: EntityRecord, name: string): string {
+  try {
+    const value = record.getValue(name);
+    return value === null || value === undefined ? 'empty' : typeof value;
+  } catch {
+    return 'unreadable';
+  }
+}
+
+/**
+ * What the host actually delivered, appended to the warnings about data the grid could not read.
+ * A canvas host can hand over records without usable column descriptions, and this line is what
+ * makes that visible instead of leaving an empty grid with no explanation.
+ */
+function describeDataset(dataset: DataSet | undefined, probes: readonly string[]): string {
+  const names = columnNames(dataset);
+  const parts = [`Host columns: ${names.length > 0 ? names.join(', ') : 'none'}.`];
+  const record = readRecords(dataset)[0];
+  if (record) {
+    parts.push(`First record: ${probes.map((name) => `${name}=${probeRead(record, name)}`).join(', ')}.`);
+  }
+  return parts.join(' ');
 }
 
 /** Cell as a boolean: `boolean`, `0|1` or `'true'|'yes'`. Anything else is false. */
@@ -390,44 +556,44 @@ function readPeople(dataset: DataSet | undefined, warnings: WarningBag): PersonR
     return [];
   }
 
-  const nameColumn = findColumn(dataset, NAME_COLUMNS);
-  const jobLevelColumn = findColumn(dataset, JOB_LEVEL_COLUMNS);
-  const teamColumn = findColumn(dataset, TEAM_COLUMNS);
-  const costRateColumn = findColumn(dataset, COST_RATE_COLUMNS);
-  const feeRateColumn = findColumn(dataset, FEE_RATE_COLUMNS);
-  const rphColumn = findColumn(dataset, RPH_COLUMNS);
-  const realisationColumn = findColumn(dataset, REALISATION_COLUMNS);
-  const jobLevelOrderColumn = findColumn(dataset, JOB_LEVEL_ORDER_COLUMNS);
-  const isToBeAddedColumn = findColumn(dataset, IS_TO_BE_ADDED_COLUMNS);
-  const currencyColumn = findColumn(dataset, CURRENCY_COLUMNS);
+  const nameField = resolveField(dataset, NAME_COLUMNS, true);
+  const jobLevelField = resolveField(dataset, JOB_LEVEL_COLUMNS, true);
+  const teamField = resolveField(dataset, TEAM_COLUMNS, true);
+  const costRateField = resolveField(dataset, COST_RATE_COLUMNS, false);
+  const feeRateField = resolveField(dataset, FEE_RATE_COLUMNS, false);
+  const rphField = resolveField(dataset, RPH_COLUMNS, false);
+  const realisationField = resolveField(dataset, REALISATION_COLUMNS, false);
+  const jobLevelOrderField = resolveField(dataset, JOB_LEVEL_ORDER_COLUMNS, false);
+  const isToBeAddedField = resolveField(dataset, IS_TO_BE_ADDED_COLUMNS, false);
+  const currencyField = resolveField(dataset, CURRENCY_COLUMNS, true);
 
   const people: PersonRow[] = [];
   let nameless = 0;
 
   for (const record of records) {
-    const name = readText(record, nameColumn);
+    const name = readText(record, nameField);
     if (name.length === 0) {
       nameless++;
       continue;
     }
-    const feeRate = readNumber(record, feeRateColumn);
-    const rph = readNumber(record, rphColumn);
-    const suppliedRealisation = readNumber(record, realisationColumn);
+    const feeRate = readNumber(record, feeRateField);
+    const rph = readNumber(record, rphField);
+    const suppliedRealisation = readNumber(record, realisationField);
     people.push({
       key: readRecordKey(record, name),
       name,
-      jobLevel: readText(record, jobLevelColumn),
-      team: readText(record, teamColumn),
-      costRate: readNumber(record, costRateColumn),
+      jobLevel: readText(record, jobLevelField),
+      team: readText(record, teamField),
+      costRate: readNumber(record, costRateField),
       feeRate,
       rph,
       realisation:
         suppliedRealisation > 0 && Number.isFinite(suppliedRealisation)
           ? suppliedRealisation
           : realisationFromRph(rph, feeRate),
-      jobLevelOrder: readNumber(record, jobLevelOrderColumn),
-      isToBeAdded: toBoolean(readCell(record, isToBeAddedColumn)),
-      currencyId: readText(record, currencyColumn),
+      jobLevelOrder: readNumber(record, jobLevelOrderField),
+      isToBeAdded: toBoolean(readCell(record, isToBeAddedField)),
+      currencyId: readText(record, currencyField),
     });
   }
 
@@ -453,9 +619,9 @@ function readAllocations(
     return [];
   }
 
-  const dateColumn = findColumn(dataset, DATE_COLUMNS);
-  const nameColumn = findColumn(dataset, NAME_COLUMNS);
-  const hoursColumn = findColumn(dataset, HOURS_COLUMNS);
+  const dateField = resolveField(dataset, DATE_COLUMNS, false);
+  const nameField = resolveField(dataset, NAME_COLUMNS, true);
+  const hoursField = resolveField(dataset, HOURS_COLUMNS, false);
 
   const keyByName = new Map<string, string>();
   for (const person of people) {
@@ -466,19 +632,24 @@ function readAllocations(
 
   const entries: AllocationEntry[] = [];
   let unreadableDates = 0;
+  let emptyHours = 0;
+  let emptyNames = 0;
   let unknownNames = 0;
 
   for (const record of records) {
-    const date = toDate(readCell(record, dateColumn));
+    const rawHours = readCell(record, hoursField);
+    if (rawHours === null || rawHours === undefined) {
+      emptyHours++;
+    }
+    const name = readText(record, nameField);
+    if (name.length === 0) {
+      emptyNames++;
+    }
+    const date = toDate(readCell(record, dateField));
     if (!date) {
       unreadableDates++;
       continue;
     }
-    const hours = readNumber(record, hoursColumn);
-    if (!Number.isFinite(hours)) {
-      continue;
-    }
-    const name = readText(record, nameColumn);
     const knownKey = keyByName.get(name);
     if (knownKey === undefined) {
       // Hours for a name that has no person row are preserved under the name itself.
@@ -487,12 +658,29 @@ function readAllocations(
     entries.push({
       personKey: knownKey ?? name,
       dateKey: toDateKey(date),
-      hours,
+      hours: toNumber(rawHours),
     });
   }
 
-  if (unreadableDates > 0) {
+  // A dataset whose property-sets do not line up with the bound table delivers records with empty
+  // cells, and a canvas host does not always describe the columns of a nonprimary dataset at all.
+  // Say what is missing and what the host delivered, rather than silently showing no hours.
+  if (unreadableDates === records.length) {
+    warnings.add(
+      `The bookings table delivered ${count(records.length, 'row')} but no Date the grid can read, so its recorded hours cannot be placed on the timeline. Bind colAllocatedHours (Name, Date, HoursWorked). ${describeDataset(dataset, DATE_COLUMNS)}`
+    );
+  } else if (unreadableDates > 0) {
     warnings.add(`Skipped ${count(unreadableDates, 'allocation row')} with an unreadable Date.`);
+  }
+  if (emptyHours === records.length) {
+    warnings.add(
+      `The bookings table delivered ${count(records.length, 'row')} but no HoursWorked the grid can read, so no booked hours are shown. Bind colAllocatedHours (Name, Date, HoursWorked). ${describeDataset(dataset, HOURS_COLUMNS)}`
+    );
+  }
+  if (emptyNames === records.length) {
+    warnings.add(
+      `The bookings table delivered ${count(records.length, 'row')} but no Name the grid can read, so its hours cannot be matched to the people list. ${describeDataset(dataset, NAME_COLUMNS)}`
+    );
   }
   if (unknownNames > 0) {
     warnings.add(
@@ -517,18 +705,18 @@ interface RawTimelineRow {
   yearNum: number;
 }
 
-function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): TimelineDay[] {
+function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): { days: TimelineDay[]; rows: number } {
   const records = readRecords(dataset);
   if (records.length === 0) {
-    return [];
+    return { days: [], rows: 0 };
   }
 
-  const dateColumn = findColumn(dataset, DATE_COLUMNS);
-  const valueColumn = findColumn(dataset, VALUE_COLUMNS);
-  const weekdayColumn = findColumn(dataset, WEEKDAY_COLUMNS);
-  const weekColumn = findColumn(dataset, WEEK_NUM_COLUMNS);
-  const monthColumn = findColumn(dataset, MONTH_NUM_COLUMNS);
-  const yearColumn = findColumn(dataset, YEAR_NUM_COLUMNS);
+  const dateField = resolveField(dataset, DATE_COLUMNS, false);
+  const valueField = resolveField(dataset, VALUE_COLUMNS, false);
+  const weekdayField = resolveField(dataset, WEEKDAY_COLUMNS, false);
+  const weekField = resolveField(dataset, WEEK_NUM_COLUMNS, false);
+  const monthField = resolveField(dataset, MONTH_NUM_COLUMNS, false);
+  const yearField = resolveField(dataset, YEAR_NUM_COLUMNS, false);
 
   const rows: RawTimelineRow[] = [];
   const seen = new Set<string>();
@@ -537,7 +725,7 @@ function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): Timel
   let usableWeekday = false;
 
   for (const record of records) {
-    const date = toDate(readCell(record, dateColumn));
+    const date = toDate(readCell(record, dateField));
     if (!date) {
       unreadableDates++;
       continue;
@@ -548,22 +736,26 @@ function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): Timel
       continue;
     }
     seen.add(dateKey);
-    const weekday = Math.trunc(readNumber(record, weekdayColumn));
+    const weekday = Math.trunc(readNumber(record, weekdayField));
     if (weekday >= 1 && weekday <= 7) {
       usableWeekday = true;
     }
     rows.push({
       dateKey,
       date,
-      value: readNumber(record, valueColumn),
+      value: readNumber(record, valueField),
       weekday,
-      weekNum: Math.trunc(readNumber(record, weekColumn)),
-      monthNum: Math.trunc(readNumber(record, monthColumn)),
-      yearNum: Math.trunc(readNumber(record, yearColumn)),
+      weekNum: Math.trunc(readNumber(record, weekField)),
+      monthNum: Math.trunc(readNumber(record, monthField)),
+      yearNum: Math.trunc(readNumber(record, yearField)),
     });
   }
 
-  if (unreadableDates > 0) {
+  if (unreadableDates === records.length) {
+    warnings.add(
+      `The timeline table delivered ${count(records.length, 'row')} but no Date the grid can read, so no timeline is taken from it. Bind colWorkstreamTimeline as it is, or leave the property unbound. ${describeDataset(dataset, DATE_COLUMNS)}`
+    );
+  } else if (unreadableDates > 0) {
     warnings.add(`Skipped ${count(unreadableDates, 'timeline row')} with an unreadable Date.`);
   }
   if (duplicates > 0) {
@@ -605,7 +797,7 @@ function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): Timel
   days.sort((left, right) =>
     left.dateKey < right.dateKey ? -1 : left.dateKey > right.dateKey ? 1 : 0
   );
-  return days;
+  return { days, rows: records.length };
 }
 
 /** ISO-8601 week number of a local date (weeks start on Monday, week 1 holds the first Thursday). */

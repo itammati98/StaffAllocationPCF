@@ -381,8 +381,11 @@ export function Grid(props: GridProps): React.ReactElement {
   });
 
   /** Sticky cells need `position: sticky` from a class; the offsets stay inline. */
-  const stickyClass = (column: ColumnLayout): string =>
-    column.stickyLeft !== undefined ? ' tfg-sticky-left' : column.stickyRight !== undefined ? ' tfg-sticky-right' : '';
+  const stickyClass = (column: ColumnLayout): string => {
+    const side =
+      column.stickyLeft !== undefined ? ' tfg-sticky-left' : column.stickyRight !== undefined ? ' tfg-sticky-right' : '';
+    return column.stickyEdge ? `${side} tfg-sticky-edge` : side;
+  };
 
   const headerFor = (column: ColumnLayout): React.ReactNode => {
     if (column.kind === 'period') {
@@ -577,16 +580,15 @@ export function Grid(props: GridProps): React.ReactElement {
         content = formatPercent(totals.avgRealisation);
         break;
       case 'period': {
+        // The totals row sums a column across everyone, so it is never compared with one person's
+        // capacity: the over-capacity flag belongs to the individual cells above it.
         const hours = column.period ? totals.hours[column.period.id] || 0 : 0;
-        const over = column.period ? hours > column.period.capacity + 1e-6 : false;
         return (
           <td
             key={`f-${index}`}
             role="gridcell"
             className={`tfg-tf tfg-tf--period tfg-align--end${stickyClass(column)}`}
             style={cellStyle(column)}
-            data-over={over || undefined}
-            data-empty={hours === 0 || undefined}
           >
             {formatHours(hours)}
           </td>

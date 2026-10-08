@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Grid, GridNotice } from './Grid';
 import { Toolbar } from './Toolbar';
+import { colorVars } from '../colors';
 import { buildColumnLayout, densityForWidth } from '../gridColumns';
 import { useElementSize, useTransientMessage } from '../hooks';
 import { formatHours } from '../format';
@@ -64,11 +65,6 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
     },
     [onChange, snapshot.timeline],
   );
-
-  // Publish the loaded state once so the host can read a complete payload before any edit.
-  React.useEffect(() => {
-    publish(store, peopleInOrder, 'load', '');
-  }, []);
 
   // Rebase whenever the host pushes new data (its collections changed outside the component).
   React.useEffect(() => {
@@ -158,9 +154,10 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
 
   const warnings = host.showNotifications ? snapshot.warnings : [];
   const totalHours = model.totals.hoursTotal;
+  const palette = React.useMemo(() => colorVars(host.colors) as React.CSSProperties, [host.colors]);
 
   return (
-    <div className="tfg-root" ref={rootRef} data-density={density} data-readonly={readOnly ? 'true' : undefined}>
+    <div className="tfg-root" ref={rootRef} style={palette} data-density={density} data-readonly={readOnly ? 'true' : undefined}>
       <Toolbar
         density={density}
         phasing={phasing}

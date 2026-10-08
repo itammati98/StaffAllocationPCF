@@ -1,9 +1,10 @@
 /**
  * Column layout for the grid: fixed widths per density, plus the sticky offsets that keep the
- * person column and the row totals in view while the timeline scrolls horizontally.
+ * person and rate columns on the left edge and the row totals on the right edge.
  *
- * Only the person column is pinned to the left edge. Pinning the rate columns as well would eat
- * most of a laptop-width viewport; they are the first columns to scroll out instead.
+ * The timeline (days, weeks or months) is the only thing that scrolls: the person, RPH, STD and
+ * REAL% columns stay pinned to the left so the rate a cell is booked against is always in view,
+ * and the totals stay pinned to the right.
  */
 import { PeriodColumn } from './types';
 
@@ -29,6 +30,8 @@ export interface ColumnLayout {
   stickyLeft?: number;
   /** Distance from the right edge of the row; set only for sticky-right columns. */
   stickyRight?: number;
+  /** The last pinned-left or the first pinned-right column: the edge of the scrolling timeline. */
+  stickyEdge?: boolean;
 }
 
 interface DensitySpec {
@@ -37,6 +40,8 @@ interface DensitySpec {
   footerHeight: number;
   /** Fixed widths; the flexible spacer column is always 0 and not listed. */
   widths: Record<Exclude<CellKind, 'spacer'>, number>;
+  /** Leading run of columns pinned to the left edge, in order; the timeline scrolls after them. */
+  stickyLeft: readonly CellKind[];
   /** Trailing run of columns pinned to the right edge; empty for the narrow density. */
   stickyRight: readonly CellKind[];
 }
@@ -47,6 +52,7 @@ export const DENSITY: Record<Density, DensitySpec> = {
     headerHeight: 34,
     footerHeight: 34,
     widths: { identity: 264, rph: 76, std: 76, real: 76, period: 72, totalHours: 84, fee: 84, gm: 76 },
+    stickyLeft: ['identity', 'rph', 'std', 'real'],
     stickyRight: ['totalHours', 'fee', 'gm'],
   },
   compact: {
@@ -54,6 +60,7 @@ export const DENSITY: Record<Density, DensitySpec> = {
     headerHeight: 32,
     footerHeight: 32,
     widths: { identity: 216, rph: 64, std: 64, real: 64, period: 60, totalHours: 72, fee: 72, gm: 72 },
+    stickyLeft: ['identity', 'rph', 'std', 'real'],
     stickyRight: ['totalHours', 'fee'],
   },
   narrow: {
@@ -61,6 +68,7 @@ export const DENSITY: Record<Density, DensitySpec> = {
     headerHeight: 30,
     footerHeight: 30,
     widths: { identity: 148, rph: 56, std: 56, real: 56, period: 56, totalHours: 64, fee: 64, gm: 64 },
+    stickyLeft: ['identity', 'rph'],
     stickyRight: [],
   },
 };
@@ -120,10 +128,11 @@ export function buildColumnLayout(periods: readonly PeriodColumn[], density: Den
   if (density === 'comfortable') addFixed('gm');
 
   let left = 0;
-  columns.forEach((column) => {
-    if (column.kind === 'identity') column.stickyLeft = left;
+  for (const column of columns) {
+    if (!spec.stickyLeft.includes(column.kind)) break;
+    column.stickyLeft = left;
     left += column.width;
-  });
+  }
 
   let right = 0;
   for (let index = columns.length - 1; index >= 0; index -= 1) {
@@ -132,6 +141,15 @@ export function buildColumnLayout(periods: readonly PeriodColumn[], density: Den
     column.stickyRight = right;
     right += column.width;
   }
+
+  // The two columns that face the scrolling timeline carry the heavier border.
+  columns.forEach((column, index) => {
+    const next = columns[index + 1];
+    const previous = columns[index - 1];
+    const endsLeftRun = column.stickyLeft !== undefined && next?.stickyLeft === undefined;
+    const startsRightRun = column.stickyRight !== undefined && previous?.stickyRight === undefined;
+    if (endsLeftRun || startsRightRun) column.stickyEdge = true;
+  });
 
   return columns;
 }

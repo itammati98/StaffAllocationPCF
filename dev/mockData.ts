@@ -1,3 +1,4 @@
+import { DEFAULT_COLORS } from '../TimeFeesGrid/src/colors';
 import {
   addDays,
   allocationKey,
@@ -13,7 +14,6 @@ import type {
   AllocationEntry,
   AllocationStore,
   GridHostInputs,
-  GridSnapshot,
   PersonRow,
   TimelineDay,
 } from '../TimeFeesGrid/src/types';
@@ -129,20 +129,19 @@ function buildMockStore(): AllocationStore {
 
 const mockStore = buildMockStore();
 
+/**
+ * colAllocatedHours as a canvas app holds it: the person column carries the person's name, which is
+ * what the component resolves against the people list.
+ */
 export const mockAllocations: AllocationEntry[] = [...mockStore].map(([key, hours]) => {
   const index = key.lastIndexOf('|');
-  return { personKey: key.slice(0, index), dateKey: key.slice(index + 1), hours };
+  const personKey = key.slice(0, index);
+  return {
+    personKey: mockPeople.find((person) => person.key === personKey)?.name ?? personKey,
+    dateKey: key.slice(index + 1),
+    hours,
+  };
 });
-
-export const mockSnapshot: GridSnapshot = {
-  people: mockPeople,
-  timeline: mockTimeline,
-  allocations: mockAllocations,
-  timelineFromHost: false,
-  warnings: ['Demo warning: the timeline table is not bound, so the grid generated a Monday to Friday timeline.'],
-  loading: false,
-  error: null,
-};
 
 export const mockHostInputs: GridHostInputs = {
   workstreamStart: WORKSTREAM_START,
@@ -152,4 +151,5 @@ export const mockHostInputs: GridHostInputs = {
   phasing: 'weekly',
   readOnly: false,
   showNotifications: true,
+  colors: DEFAULT_COLORS,
 };

@@ -6,14 +6,33 @@
 //  screen holding the component: its datasets refresh when the collections
 //  change.
 //
-//  Component properties to set:
-//      People          = colPeopleAllocated
-//      Bookings        = colAllocatedHours
-//      Timeline        = colWorkstreamTimeline
-//      WorkstreamStart = Date(2026,1,5)
-//      NumberOfWeeks   = 4
-//      Phasing         = Weekly        PricingMethod = Rate card
-//      ReadOnly        = false
+//  Component properties to set (the labels are the ones the property pane
+//  shows):
+//      People (colPeopleAllocated)      = colPeopleAllocated
+//      Booked hours (colAllocatedHours) = AddColumns(colAllocatedHours, PersonName, Name, AllocationDate, Date)
+//      Timeline (colWorkstreamTimeline) = colWorkstreamTimeline
+//      Workstream start = Date(2026,1,5)
+//      Number of weeks  = 4
+//      Phasing          = Weekly        Pricing mode = "manualRate"
+//      Read only        = false
+//      Accent colour    = "#0f6cbd"     (and the five other colour properties)
+//
+//  Why the bookings table needs AddColumns: a dataset property is populated by
+//  matching the component's property-set names against the bound collection's
+//  column names, and Dataverse requires those names to be unique across the
+//  whole control. colAllocatedHours shares Name with colPeopleAllocated and
+//  Date with colWorkstreamTimeline, so the component reads the PersonName and
+//  AllocationDate aliases and the binding creates them. HoursWorked is read as
+//  it is. With AddColumns the aliases carry the same values as Name and Date,
+//  so the grid shows the booked hours.
+//
+//  The component reads its datasets by column name, so the bound collections
+//  must expose the names used below: colPeopleAllocated.Name, .JobLevel,
+//  .Team, .CostRate, .FeeRate, .RPH, .Realisation, .JobLevelOrder,
+//  .IsToBeAdded, .CurrencyID; the aliases above plus colAllocatedHours
+//  .HoursWorked; colWorkstreamTimeline.Date, .Value, .Weekday, .WeekNum,
+//  .MonthNum, .YearNum. A name it cannot find is reported as a warning above
+//  the grid rather than silently showing nothing.
 //
 //  Conventions the component relies on (keep them in your own data too):
 //      Timeline.Weekday   1 = Monday .. 7 = Sunday; 6 and 7 never take hours
@@ -27,6 +46,113 @@
 //  and one booking outside the workstream window (kept and reported in the
 //  toolbar instead of being dropped).
 // ============================================================================
+
+
+// ---------------------------------------------------------------------------
+//  0. Keeping the collections up to date while the grid is used
+//     ---------------------------------------------------------------------
+//  The grid shows the hours and rates it was given and publishes every edit on
+//  its Changes output. Write that back on the component's OnChange property:
+//
+//  =If(
+//      Component.Changes.action in ["hoursChanged", "hoursCleared", "ratesChanged", "hoursFilled"],
+//      RemoveIf(colAllocatedHours, Name in ShowColumns(Component.Changes.people, "Name"));
+//      Collect(
+//          colAllocatedHours,
+//          ForAll(
+//              Component.Changes.allocations As row,
+//              {
+//                  Name: row.Name,
+//                  Date: DateValue(row.Date),   // the payload carries ISO text; keep the collection's Date a real date
+//                  Value: row.Value,
+//                  Weekday: row.Weekday,
+//                  WeekNum: row.WeekNum,
+//                  MonthNum: row.MonthNum,
+//                  YearNum: row.YearNum,
+//                  HoursWorked: row.HoursWorked
+//              }
+//          )
+//      );
+//      ForAll(
+//          Component.Changes.people As person,
+//          Patch(
+//              colPeopleAllocated,
+//              LookUp(colPeopleAllocated, Name = person.Name),
+//              { RPH: person.RPH, Realisation: person.Realisation }
+//          )
+//      )
+//  );
+//  If(
+//      Component.Changes.action = "addStaffRequested",
+//      Set(gShowStaffPicker, true)          // your own picker/panel; the grid only asks
+//  );
+//  If(
+//      Component.Changes.action = "removePersonRequested",
+//      RemoveIf(colPeopleAllocated, Name = Component.Changes.personName);
+//      RemoveIf(colAllocatedHours, Name = Component.Changes.personName)
+//  )
+//
+//  In the control's own OnChange, `Component` is the control instance (its name
+//  on the screen, or `Self`).
+//
+//  Why it is written this way:
+//      * Writing back makes the bound collections change, which makes the host
+//        redeliver the datasets. The component recognises its own change coming
+//        back, so that redelivery does not reset the grid: no flicker, and the
+//        cell being edited keeps its value and its caret.
+//      * RemoveIf + Collect touches only the people in the payload, so a
+//        bookings collection shared with other workstreams keeps their rows.
+//      * The payload is JSON: its Date is ISO text (the output's JSON schema
+//        declares type string), while the collection's Date column is a real
+//        date. DateValue(row.Date) bridges the two - it has an overload for
+//        untyped (Dynamic) JSON values and accepts the YYYY-MM-DD format. Do
+//        not collect the payload's Date straight in: the column's type then
+//        depends on whichever formula Studio infers first, and the dummy
+//        ClearCollect with Date(2026,1,5) fails with "The 'Date' column in
+//        the data source you are updating expects text".
+//      * The rates are Patched, so whatever else colPeopleAllocated carries
+//        (WorkstreamID, DailyHours, ...) survives.
+//      * The grid publishes nothing when the host only re-delivers the datasets,
+//        so opening the screen fires no OnChange at all; the action check in the
+//        formula is what keeps any stray payload from touching the collections.
+//      * If you would rather not use the component's OnChange property, watch
+//        Component.Changes.revision from a Timer and run the same steps when it
+//        differs from the last revision you saw.
+//
+//  The two request actions ask the app to change the people list itself:
+//      "addStaffRequested"      open your staff picker (show a panel with a
+//                               variable, or Navigate to a picker screen) and
+//                               Collect the chosen person into
+//                               colPeopleAllocated with IsToBeAdded = true, so
+//                               the row shows the "new" tag until it is saved.
+//                               The grid rebases itself when the collection
+//                               changes; this payload is not written back.
+//      "removePersonRequested"  RemoveIf(colPeopleAllocated, Name = Component.Changes.personName);
+//                               RemoveIf(colAllocatedHours, Name = Component.Changes.personName)
+//
+//  The picker's own button collects the staff member the user chose:
+//      Collect(
+//          colPeopleAllocated,
+//          {
+//              Name: gSelectedStaff.Name,
+//              JobLevel: gSelectedStaff.JobLevel,
+//              Team: gSelectedStaff.Team,
+//              CostRate: gSelectedStaff.CostRate,
+//              FeeRate: gSelectedStaff.FeeRate,
+//              RPH: gSelectedStaff.FeeRate,
+//              Realisation: 1,
+//              JobLevelOrder: gSelectedStaff.JobLevelOrder,
+//              IsToBeAdded: true,
+//              CurrencyID: "GBP"
+//          }
+//      );
+//      Set(gShowStaffPicker, false)
+//
+//  Every payload also carries: revision (increments per change), action,
+//  personName, allocations (day rows: Name, Date, Value, Weekday, WeekNum,
+//  MonthNum, YearNum, HoursWorked) and people (Name, JobLevel, Team, CostRate,
+//  FeeRate, RPH, Realisation, JobLevelOrder, IsToBeAdded, CurrencyID).
+// ---------------------------------------------------------------------------
 
 
 // ---------------------------------------------------------------------------

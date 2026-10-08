@@ -30,7 +30,7 @@
     <value>Booked hours (colAllocatedHours)</value>
   </data>
   <data name="GridAllocations_Desc" xml:space="preserve">
-    <value>The grid reads this table's columns by name, so the bound table must expose PersonName and AllocationDate (the component cannot reuse Name and Date because every column name has to be unique across the control). Bind: AddColumns(colAllocatedHours, PersonName, Name, AllocationDate, Date). Rows dated outside the workstream window keep their hours and date, and come back with Value, Weekday and WeekNum set to 0 because the window no longer describes them.</value>
+    <value>Bind: AddColumns(colAllocatedHours, PersonName, Name, AllocationDate, Date). The component reads this table by column name, and Dataverse requires every property-set name to be unique across the whole control, so the person and the date are read through the PersonName and AllocationDate aliases (HoursWorked is read as it is). If a binding does not line up, the grid says which column it could not find instead of showing no hours at all. Hours dated outside the workstream window keep their date and hours, and come back with Value, Weekday and WeekNum set to 0 because the window no longer describes them.</value>
   </data>
   <data name="GridTimeline_Display" xml:space="preserve">
     <value>Timeline (colWorkstreamTimeline)</value>
@@ -86,11 +86,35 @@
   <data name="ShowNotifications_Desc" xml:space="preserve">
     <value>Turn on to show the dataset warnings above the timeline (for example when an optional table is not bound). Turn off to keep the grid silent.</value>
   </data>
+  <data name="AccentColor_Display" xml:space="preserve"><value>Accent colour</value></data>
+  <data name="AccentColor_Desc" xml:space="preserve">
+    <value>Buttons, focus rings, the active cell and the selected phasing use this colour: #rgb, #rrggbb, rgb() or rgba(). The soft tints the grid paints behind the active row are derived from it.</value>
+  </data>
+  <data name="BackgroundColor_Display" xml:space="preserve"><value>Grid background</value></data>
+  <data name="BackgroundColor_Desc" xml:space="preserve">
+    <value>Background of the grid viewport and the body rows. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="HeaderColor_Display" xml:space="preserve"><value>Header and totals colour</value></data>
+  <data name="HeaderColor_Desc" xml:space="preserve">
+    <value>Background of the timeline header row and the totals row. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="TextColor_Display" xml:space="preserve"><value>Text colour</value></data>
+  <data name="TextColor_Desc" xml:space="preserve">
+    <value>Body text of the grid. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="OverCapacityColor_Display" xml:space="preserve"><value>Over-capacity cell fill</value></data>
+  <data name="OverCapacityColor_Desc" xml:space="preserve">
+    <value>Fill of a period cell that holds more hours than that period can take. Only the individual cells are highlighted; the totals row reads the same as the rest of the grid. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="OverCapacityTextColor_Display" xml:space="preserve"><value>Over-capacity cell text</value></data>
+  <data name="OverCapacityTextColor_Desc" xml:space="preserve">
+    <value>Text colour of a period cell that holds more hours than that period can take, and of the warning banners above the grid. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
   <data name="DataSchema_Display" xml:space="preserve"><value>Changes schema</value></data>
   <data name="DataSchema_Desc" xml:space="preserve"><value>Internal: carries the output schema for canvas apps.</value></data>
   <data name="Changes_Display" xml:space="preserve"><value>Changes</value></data>
   <data name="Changes_Desc" xml:space="preserve">
-    <value>Latest change published by the grid: revision, action, personName, the allocations table and the people table. Write these back to colAllocatedHours and colPeopleAllocated to save.</value>
+    <value>Latest change published by the grid: revision, action, personName, the allocations table and the people table. On the component's OnChange property, write the allocations back to colAllocatedHours and the rates back to colPeopleAllocated; the grid ignores the resulting dataset refresh, so writing back does not make it flicker or lose the cell being edited.</value>
   </data>
   <data name="ChangesJson_Display" xml:space="preserve"><value>Changes (JSON)</value></data>
   <data name="ChangesJson_Desc" xml:space="preserve"><value>Same payload as the Changes property, serialised, for apps that prefer to parse JSON.</value></data>

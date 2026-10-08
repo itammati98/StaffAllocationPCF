@@ -4,8 +4,16 @@
  * the grid depends on (nothing is thrown away silently, out-of-window hours survive).
  */
 import { describe, expect, it } from 'vitest';
-import { clampHoursPerDay, clampWeeks, readSnapshot, snapshotSignature } from '../TimeFeesGrid/src/datasetAdapter';
-import type { GridHostInputs } from '../TimeFeesGrid/src/types';
+import {
+  clampHoursPerDay,
+  clampWeeks,
+  outputSignature,
+  readSnapshot,
+  snapshotSignature,
+} from '../TimeFeesGrid/src/datasetAdapter';
+import { buildOutput, createStore } from '../TimeFeesGrid/src/engine';
+import { DEFAULT_COLORS } from '../TimeFeesGrid/src/colors';
+import type { GridHostInputs, GridOutput } from '../TimeFeesGrid/src/types';
 
 type DataSet = ComponentFramework.PropertyTypes.DataSet;
 
@@ -56,6 +64,7 @@ const HOST: GridHostInputs = {
   phasing: 'weekly',
   readOnly: false,
   showNotifications: true,
+  colors: DEFAULT_COLORS,
 };
 
 const PEOPLE_COLUMNS: FakeColumn[] = [
@@ -99,6 +108,25 @@ function alice(extra: Record<string, unknown> = {}): FakeRow {
       Realisation: 0,
       JobLevelOrder: 0,
       IsToBeAdded: 'yes',
+      CurrencyID: 'GBP',
+      ...extra,
+    },
+  };
+}
+
+function bob(extra: Record<string, unknown> = {}): FakeRow {
+  return {
+    id: 'bob-record',
+    values: {
+      Name: 'Bob Brown',
+      JobLevel: 'Consultant',
+      Team: 'Delivery',
+      CostRate: 45,
+      FeeRate: 150,
+      RPH: 140,
+      Realisation: 140 / 150,
+      JobLevelOrder: 1,
+      IsToBeAdded: false,
       CurrencyID: 'GBP',
       ...extra,
     },
@@ -232,11 +260,106 @@ describe('meta and signature', () => {
     expect(snapshotSignature(changed)).not.toBe(snapshotSignature(first));
   });
 
+  it('ignores the order the host happens to list rows in', () => {
+    const people = dataset(PEOPLE_COLUMNS, [alice(), bob()]);
+    const reversedPeople = dataset(PEOPLE_COLUMNS, [bob(), alice()]);
+    const allocations = dataset(ALLOCATION_COLUMNS, [
+      { values: { Name: 'Alice Adams', Date: '2026-01-05', HoursWorked: 8 } },
+      { values: { Name: 'Bob Brown', Date: '2026-01-06', HoursWorked: 4 } },
+    ]);
+    const shuffled = dataset(ALLOCATION_COLUMNS, [
+      { values: { Name: 'Bob Brown', Date: '2026-01-06', HoursWorked: 4 } },
+      { values: { Name: 'Alice Adams', Date: '2026-01-05', HoursWorked: 8 } },
+    ]);
+
+    expect(snapshotSignature(readSnapshot({ people: reversedPeople, allocations: shuffled }, HOST))).toBe(
+      snapshotSignature(readSnapshot({ people, allocations }, HOST)),
+    );
+  });
+
+  it('hashes a published payload the same as the snapshot it comes back as', () => {
+    const snapshot = readSnapshot(
+      {
+        people: dataset(PEOPLE_COLUMNS, [alice()]),
+        allocations: dataset(ALLOCATION_COLUMNS, [
+          { values: { Name: 'Alice Adams', Date: '2026-01-05', HoursWorked: 8 } },
+          { values: { Name: 'Alice Adams', Date: '2026-01-06', HoursWorked: 7.5 } },
+        ]),
+      },
+      HOST,
+    );
+    const payload = buildOutput(createStore(snapshot.allocations), snapshot.people, snapshot.timeline);
+    const output: GridOutput = { revision: 1, action: 'hoursChanged', personName: 'Alice Adams', ...payload };
+
+    // This is what lets the component recognise the app writing its own change back.
+    expect(outputSignature(output, snapshot)).toBe(snapshotSignature(snapshot));
+  });
+
   it('clamps the host scalars that drive the generated timeline', () => {
     expect(clampWeeks(0)).toBe(1);
     expect(clampWeeks(999)).toBe(52);
     expect(clampWeeks(Number.NaN)).toBe(1);
     expect(clampHoursPerDay(1)).toBe(1);
     expect(clampHoursPerDay(100)).toBe(24);
+  });
+});
+
+// A canvas host delivers the records of a nonprimary dataset but not always a usable description of
+// its columns. The recorded hours must still be read, and when they genuinely cannot be, the
+// warning has to say what the host did deliver.
+describe('hosts that do not describe their columns', () => {
+  it('reads bookings by property-set name when the host reports no columns', () => {
+    const allocations = dataset([], [
+      { values: { PersonName: 'Alice Adams', AllocationDate: '2026-01-05', HoursWorked: '8' } },
+      { values: { PersonName: 'Alice Adams', AllocationDate: '2026-01-06', HoursWorked: 7.5 } },
+    ]);
+    const snapshot = readSnapshot({ allocations }, HOST);
+    expect(snapshot.allocations).toEqual([
+      { personKey: 'Alice Adams', dateKey: '2026-01-05', hours: 8 },
+      { personKey: 'Alice Adams', dateKey: '2026-01-06', hours: 7.5 },
+    ]);
+    expect(snapshot.warnings.some((warning) => /no Date the grid can read/i.test(warning))).toBe(false);
+  });
+
+  it('reads the timeline by name when the host reports no columns', () => {
+    const timeline = dataset([], [
+      { values: { Date: '2026-01-05', Value: 1, Weekday: 1, WeekNum: 1, MonthNum: 1, YearNum: 2026 } },
+      { values: { Date: '2026-01-06', Value: 2, Weekday: 2, WeekNum: 1, MonthNum: 1, YearNum: 2026 } },
+    ]);
+    const snapshot = readSnapshot({ timeline }, HOST);
+    expect(snapshot.timelineFromHost).toBe(true);
+    expect(snapshot.timeline.map((day) => day.dateKey)).toEqual(['2026-01-05', '2026-01-06']);
+    expect(snapshot.warnings).toEqual([]);
+  });
+
+  it('matches columns that still carry their table qualifier', () => {
+    const allocations = dataset(
+      [
+        { name: 'colAllocatedHours.PersonName' },
+        { name: 'colAllocatedHours.AllocationDate', dataType: 'DateAndTime.DateOnly' },
+        { name: 'colAllocatedHours.HoursWorked', dataType: 'Decimal' },
+      ],
+      [
+        {
+          values: {
+            'colAllocatedHours.PersonName': 'Alice Adams',
+            'colAllocatedHours.AllocationDate': '2026-01-05',
+            'colAllocatedHours.HoursWorked': 8,
+          },
+        },
+      ],
+    );
+    const snapshot = readSnapshot({ allocations }, HOST);
+    expect(snapshot.allocations).toEqual([{ personKey: 'Alice Adams', dateKey: '2026-01-05', hours: 8 }]);
+    expect(snapshot.warnings.some((warning) => /no Date the grid can read/i.test(warning))).toBe(false);
+  });
+
+  it('names the delivered columns when nothing can be read', () => {
+    const allocations = dataset([{ name: 'SomeOtherColumn' }], [{ values: { SomeOtherColumn: 'x' } }]);
+    const snapshot = readSnapshot({ allocations }, HOST);
+    const warning = snapshot.warnings.find((entry) => /no Date the grid can read/i.test(entry)) ?? '';
+    expect(warning).toContain('delivered 1 row');
+    expect(warning).toContain('Host columns: SomeOtherColumn.');
+    expect(warning).toContain('AllocationDate=empty');
   });
 });
