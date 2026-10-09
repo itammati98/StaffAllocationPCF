@@ -425,10 +425,7 @@ export function Grid(props: GridProps): React.ReactElement {
       </span>
       <span className="tfg-identity__text">
         <span className="tfg-identity__name">{row.person.name || 'Unnamed person'}</span>
-        <span className="tfg-identity__meta">
-          {jobLevelLine(row)}
-          {row.person.isToBeAdded ? <em className="tfg-tag">new</em> : null}
-        </span>
+        <span className="tfg-identity__meta">{jobLevelLine(row)}</span>
       </span>
       {readOnly ? null : (
         <span className="tfg-rowactions">

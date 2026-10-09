@@ -151,5 +151,6 @@ export const mockHostInputs: GridHostInputs = {
   phasing: 'weekly',
   readOnly: false,
   showNotifications: true,
+  showPricingBadge: true,
   colors: DEFAULT_COLORS,
 };

@@ -86,6 +86,10 @@
   <data name="ShowNotifications_Desc" xml:space="preserve">
     <value>Turn on to show the dataset warnings above the timeline (for example when an optional table is not bound). Turn off to keep the grid silent.</value>
   </data>
+  <data name="ShowPricingBadge_Display" xml:space="preserve"><value>Show pricing badge</value></data>
+  <data name="ShowPricingBadge_Desc" xml:space="preserve">
+    <value>Turn on to show the chip in the toolbar that names the pricing mode the app set (manual rate adjustment or realisation adjustment). Turn off to leave the grid unlabelled; the mode still decides which rate is editable.</value>
+  </data>
   <data name="AccentColor_Display" xml:space="preserve"><value>Accent colour</value></data>
   <data name="AccentColor_Desc" xml:space="preserve">
     <value>Buttons, focus rings, the active cell and the selected phasing use this colour: #rgb, #rrggbb, rgb() or rgba(). The soft tints the grid paints behind the active row are derived from it.</value>
@@ -109,6 +113,26 @@
   <data name="OverCapacityTextColor_Display" xml:space="preserve"><value>Over-capacity cell text</value></data>
   <data name="OverCapacityTextColor_Desc" xml:space="preserve">
     <value>Text colour of a period cell that holds more hours than that period can take, and of the warning banners above the grid. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="BorderColor_Display" xml:space="preserve"><value>Grid line colour</value></data>
+  <data name="BorderColor_Desc" xml:space="preserve">
+    <value>Cell separators, grid lines and the scrollbar. The stronger separators that face the scrolling timeline are derived from it. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="MutedTextColor_Display" xml:space="preserve"><value>Secondary text colour</value></data>
+  <data name="MutedTextColor_Desc" xml:space="preserve">
+    <value>Job level and team under each name, header labels, totals captions and the hint strip. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="HoverColor_Display" xml:space="preserve"><value>Row hover colour</value></data>
+  <data name="HoverColor_Desc" xml:space="preserve">
+    <value>Fill of the row under the pointer. Keep it opaque so the pinned columns never show the timeline through them. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="SubtleBackgroundColor_Display" xml:space="preserve"><value>Toolbar background colour</value></data>
+  <data name="SubtleBackgroundColor_Desc" xml:space="preserve">
+    <value>Background of the toolbar, the help panel and the hint strip. #rgb, #rrggbb, rgb() or rgba().</value>
+  </data>
+  <data name="DangerColor_Display" xml:space="preserve"><value>Danger colour</value></data>
+  <data name="DangerColor_Desc" xml:space="preserve">
+    <value>Remove button on hover and the error banner text. The banner fill is derived from it. #rgb, #rrggbb, rgb() or rgba().</value>
   </data>
   <data name="DataSchema_Display" xml:space="preserve"><value>Changes schema</value></data>
   <data name="DataSchema_Desc" xml:space="preserve"><value>Internal: carries the output schema for canvas apps.</value></data>

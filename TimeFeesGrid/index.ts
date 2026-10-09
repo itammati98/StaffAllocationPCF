@@ -197,6 +197,10 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       showNotifications: parameters.showNotifications?.raw === undefined || parameters.showNotifications?.raw === null
         ? true
         : readBoolean(parameters.showNotifications.raw),
+      // The pricing chip is shown unless the app turns it off.
+      showPricingBadge: parameters.showPricingBadge?.raw === undefined || parameters.showPricingBadge?.raw === null
+        ? true
+        : readBoolean(parameters.showPricingBadge.raw),
       colors: this.colors,
     };
   }

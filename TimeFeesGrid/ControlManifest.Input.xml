@@ -7,7 +7,7 @@
     with colAllocatedHours as the editable bookings. The three collections are bound as datasets;
     the component publishes every change back to the app through the Changes / ChangesJson outputs.
   -->
-  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.3.1"
+  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.4.0"
            display-name-key="TimeFeesGrid_Display" description-key="TimeFeesGrid_Desc"
            control-type="virtual">
 
@@ -79,9 +79,14 @@
               of-type="TwoOptions" usage="input" default-value="false" />
     <property name="showNotifications" display-name-key="ShowNotifications_Display" description-key="ShowNotifications_Desc"
               of-type="TwoOptions" usage="input" default-value="true" />
+    <property name="showPricingBadge" display-name-key="ShowPricingBadge_Display" description-key="ShowPricingBadge_Desc"
+              of-type="TwoOptions" usage="input" default-value="true" />
 
     <!-- Colours. Every value is a CSS colour the maker can paste in the property pane: #rgb, #rrggbb
-         or an rgb()/rgba() function. A value the component cannot read falls back to the default. -->
+         or an rgb()/rgba() function. A value the component cannot read falls back to the default.
+         Tints (active row and cell, soft text, strong borders, danger fill) are derived from these,
+         and every fill that can land on a pinned column stays opaque, so the timeline never shows
+         through the person and rate columns. -->
     <property name="accentColor" display-name-key="AccentColor_Display" description-key="AccentColor_Desc"
               of-type="SingleLine.Text" usage="input" default-value="#0f6cbd" />
     <property name="backgroundColor" display-name-key="BackgroundColor_Display" description-key="BackgroundColor_Desc"
@@ -94,6 +99,16 @@
               of-type="SingleLine.Text" usage="input" default-value="#fff8e1" />
     <property name="overCapacityTextColor" display-name-key="OverCapacityTextColor_Display" description-key="OverCapacityTextColor_Desc"
               of-type="SingleLine.Text" usage="input" default-value="#8a6116" />
+    <property name="borderColor" display-name-key="BorderColor_Display" description-key="BorderColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#edebe9" />
+    <property name="mutedTextColor" display-name-key="MutedTextColor_Display" description-key="MutedTextColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#605e5c" />
+    <property name="hoverColor" display-name-key="HoverColor_Display" description-key="HoverColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#f8f8f7" />
+    <property name="subtleBackgroundColor" display-name-key="SubtleBackgroundColor_Display" description-key="SubtleBackgroundColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#faf9f8" />
+    <property name="dangerColor" display-name-key="DangerColor_Display" description-key="DangerColor_Desc"
+              of-type="SingleLine.Text" usage="input" default-value="#a4262c" />
 
     <!-- Raised when the user asks the app to add or to remove a person -->
     <!-- (Custom events are a preview authoring feature and were removed for stability; the grid

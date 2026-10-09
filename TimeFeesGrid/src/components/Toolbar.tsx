@@ -21,6 +21,8 @@ interface ToolbarProps {
   phasing: Phasing;
   /** Shown as a read-only chip: the app owns the pricing mode. */
   pricingMethod: PricingMethod;
+  /** False hides the pricing chip; the app can set the mode without labelling it. */
+  showPricingBadge: boolean;
   readOnly: boolean;
   peopleCount: number;
   periodCount: number;
@@ -35,7 +37,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar(props: ToolbarProps): React.ReactElement {
-  const { density, phasing, pricingMethod, readOnly, peopleCount, periodCount, hoursTotal, outsideWindowHours, helpOpen } = props;
+  const { density, phasing, pricingMethod, showPricingBadge, readOnly, peopleCount, periodCount, hoursTotal, outsideWindowHours, helpOpen } = props;
   const buttons = React.useRef<(HTMLButtonElement | null)[]>([]);
 
   /** Arrow keys move between the phasing buttons, as expected of a radio group. */
@@ -83,14 +85,16 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
         ))}
       </div>
 
-      <span
-        className="tfg-chip tfg-chip--info"
-        title={`Pricing is set by the app: ${PRICING_LABELS[pricingMethod]} ${
-          pricingMethod === 'manualRate' ? 'lets you type RPH, and derives the realisation' : 'lets you type the realisation, and derives RPH'
-        }`}
-      >
-        {PRICING_LABELS[pricingMethod]}
-      </span>
+      {showPricingBadge ? (
+        <span
+          className="tfg-chip tfg-chip--info"
+          title={`Pricing is set by the app: ${PRICING_LABELS[pricingMethod]} ${
+            pricingMethod === 'manualRate' ? 'lets you type RPH, and derives the realisation' : 'lets you type the realisation, and derives RPH'
+          }`}
+        >
+          {PRICING_LABELS[pricingMethod]}
+        </span>
+      ) : null}
 
       <span className="tfg-toolbar__spacer" />
 

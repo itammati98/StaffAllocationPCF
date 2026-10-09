@@ -157,6 +157,8 @@ export interface GridHostInputs {
   readOnly: boolean;
   /** False hides the dataset warnings the grid would otherwise show above the timeline. */
   showNotifications: boolean;
+  /** False hides the chip that names the pricing mode the app set. */
+  showPricingBadge: boolean;
   /** Studio-configured palette, applied to the grid root as CSS custom properties. */
   colors: GridColors;
 }

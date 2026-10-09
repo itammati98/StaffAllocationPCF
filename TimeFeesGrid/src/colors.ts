@@ -7,6 +7,10 @@
  *
  * The values are handed to the stylesheet as CSS custom properties on the grid root, which is the
  * single place the defaults live; nothing below reads a literal brand colour.
+ *
+ * Every fill that can land on a pinned column is composited over the grid background before it is
+ * handed over, so it stays opaque: a translucent tint would let the timeline scroll through the
+ * person and rate columns.
  */
 
 /** Property names read from the host, in the order the property pane lists them. */
@@ -17,6 +21,11 @@ export const COLOR_PROPERTIES = {
   text: 'textColor',
   overCapacity: 'overCapacityColor',
   overCapacityText: 'overCapacityTextColor',
+  border: 'borderColor',
+  mutedText: 'mutedTextColor',
+  hover: 'hoverColor',
+  subtleBackground: 'subtleBackgroundColor',
+  danger: 'dangerColor',
 } as const;
 
 export interface GridColors {
@@ -32,6 +41,16 @@ export interface GridColors {
   overCapacity: string;
   /** Text of a period cell that holds more hours than the period can take. */
   overCapacityText: string;
+  /** Cell separators, grid lines and the scrollbar. */
+  border: string;
+  /** Secondary text: job level and team, header labels, totals captions and hints. */
+  mutedText: string;
+  /** Row fill under the pointer. */
+  hover: string;
+  /** Toolbar, help panel and hint strip background. */
+  subtleBackground: string;
+  /** Destructive affordances: the row remove button and the error banner. */
+  danger: string;
 }
 
 export const DEFAULT_COLORS: GridColors = {
@@ -41,11 +60,25 @@ export const DEFAULT_COLORS: GridColors = {
   text: '#201f1e',
   overCapacity: '#fff8e1',
   overCapacityText: '#8a6116',
+  border: '#edebe9',
+  mutedText: '#605e5c',
+  hover: '#f8f8f7',
+  subtleBackground: '#faf9f8',
+  danger: '#a4262c',
 };
 
-/** Alpha applied to the accent for soft fills: selected segment, active cell, active row. */
+/** Alpha of the soft accent chrome (selected segment, status strip, pricing chip). */
 const SOFT_ALPHA = 0.1;
+/** Alpha the accent is composited at for the row that holds the focused cell. */
 const ACTIVE_ROW_ALPHA = 0.06;
+/** Alpha the accent is composited at for the focused cell itself. */
+const ACTIVE_CELL_ALPHA = 0.1;
+/** Alpha the danger colour is composited at for its soft fill. */
+const DANGER_SOFT_ALPHA = 0.08;
+/** How far muted text is mixed toward the background for the softest text. */
+const SOFT_TEXT_ALPHA = 0.62;
+/** How much the border colour is darkened for the stronger separators. */
+const BORDER_STRONG_DARKEN = 0.12;
 /** How much `overCapacity` is darkened for the active over-capacity cell. */
 const OVER_CAPACITY_ACTIVE_DARKEN = 0.06;
 
@@ -94,12 +127,24 @@ export function normalizeColor(value: unknown, fallback: string): string {
   return parseColor(text) ? text : fallback;
 }
 
+/** The colour as typed, with an alpha, as `rgba(...)`. */
 function withAlpha(color: string, alpha: number, fallback: string): string {
   const parsed = parseColor(color);
   if (!parsed) {
     return fallback;
   }
   return `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${alpha})`;
+}
+
+/** `color` composited over `base` at `alpha`, always opaque. */
+function blendOver(color: string, base: string, alpha: number, fallback: string): string {
+  const top = parseColor(color);
+  const bottom = parseColor(base);
+  if (!top || !bottom) {
+    return fallback;
+  }
+  const channel = (upper: number, lower: number): number => Math.round(upper * alpha + lower * (1 - alpha));
+  return `rgb(${channel(top.r, bottom.r)}, ${channel(top.g, bottom.g)}, ${channel(top.b, bottom.b)})`;
 }
 
 function darken(color: string, amount: number, fallback: string): string {
@@ -111,7 +156,16 @@ function darken(color: string, amount: number, fallback: string): string {
   return `rgb(${Math.round(parsed.r * scale)}, ${Math.round(parsed.g * scale)}, ${Math.round(parsed.b * scale)})`;
 }
 
-/** Reads the six colour properties through `read` (the raw value of a property, by name). */
+/** The colour as typed when it is already opaque, else flattened over white. */
+function opaque(color: string, fallback: string): string {
+  const parsed = parseColor(color);
+  if (!parsed) {
+    return fallback;
+  }
+  return parsed.a >= 1 ? color : blendOver(color, '#ffffff', parsed.a, fallback);
+}
+
+/** Reads the colour properties through `read` (the raw value of a property, by name). */
 export function readColors(read: (name: string) => unknown): GridColors {
   return {
     accent: normalizeColor(read(COLOR_PROPERTIES.accent), DEFAULT_COLORS.accent),
@@ -120,6 +174,11 @@ export function readColors(read: (name: string) => unknown): GridColors {
     text: normalizeColor(read(COLOR_PROPERTIES.text), DEFAULT_COLORS.text),
     overCapacity: normalizeColor(read(COLOR_PROPERTIES.overCapacity), DEFAULT_COLORS.overCapacity),
     overCapacityText: normalizeColor(read(COLOR_PROPERTIES.overCapacityText), DEFAULT_COLORS.overCapacityText),
+    border: normalizeColor(read(COLOR_PROPERTIES.border), DEFAULT_COLORS.border),
+    mutedText: normalizeColor(read(COLOR_PROPERTIES.mutedText), DEFAULT_COLORS.mutedText),
+    hover: normalizeColor(read(COLOR_PROPERTIES.hover), DEFAULT_COLORS.hover),
+    subtleBackground: normalizeColor(read(COLOR_PROPERTIES.subtleBackground), DEFAULT_COLORS.subtleBackground),
+    danger: normalizeColor(read(COLOR_PROPERTIES.danger), DEFAULT_COLORS.danger),
   };
 }
 
@@ -131,24 +190,40 @@ export function colorsEqual(left: GridColors, right: GridColors): boolean {
     left.header === right.header &&
     left.text === right.text &&
     left.overCapacity === right.overCapacity &&
-    left.overCapacityText === right.overCapacityText
+    left.overCapacityText === right.overCapacityText &&
+    left.border === right.border &&
+    left.mutedText === right.mutedText &&
+    left.hover === right.hover &&
+    left.subtleBackground === right.subtleBackground &&
+    left.danger === right.danger
   );
 }
 
 /**
- * The CSS custom properties the stylesheet reads. Tints that used to be hardcoded (soft accent,
- * active row, the darker over-capacity fill) are derived from the maker's colours.
+ * The CSS custom properties the stylesheet reads. Everything the grid paints on top of another
+ * surface - the active row, the active cell, the over-capacity fill - is opaque, because the
+ * timeline scrolls underneath the pinned columns.
  */
 export function colorVars(colors: GridColors): Record<string, string> {
+  const background = opaque(colors.background, DEFAULT_COLORS.background);
   return {
     '--tfg-accent': colors.accent,
     '--tfg-accent-soft': withAlpha(colors.accent, SOFT_ALPHA, DEFAULT_COLORS.accent),
-    '--tfg-active-row': withAlpha(colors.accent, ACTIVE_ROW_ALPHA, DEFAULT_COLORS.accent),
-    '--tfg-bg': colors.background,
-    '--tfg-bg-head': colors.header,
-    '--tfg-bg-foot': colors.header,
+    '--tfg-active-row': blendOver(colors.accent, background, ACTIVE_ROW_ALPHA, DEFAULT_COLORS.accent),
+    '--tfg-active-cell': blendOver(colors.accent, background, ACTIVE_CELL_ALPHA, DEFAULT_COLORS.accent),
+    '--tfg-bg': background,
+    '--tfg-bg-head': opaque(colors.header, DEFAULT_COLORS.header),
+    '--tfg-bg-foot': opaque(colors.header, DEFAULT_COLORS.header),
+    '--tfg-bg-subtle': opaque(colors.subtleBackground, DEFAULT_COLORS.subtleBackground),
     '--tfg-text': colors.text,
-    '--tfg-warn-bg': colors.overCapacity,
+    '--tfg-text-muted': colors.mutedText,
+    '--tfg-text-soft': blendOver(colors.mutedText, background, SOFT_TEXT_ALPHA, DEFAULT_COLORS.mutedText),
+    '--tfg-hover': opaque(colors.hover, DEFAULT_COLORS.hover),
+    '--tfg-border': opaque(colors.border, DEFAULT_COLORS.border),
+    '--tfg-border-strong': darken(colors.border, BORDER_STRONG_DARKEN, DEFAULT_COLORS.border),
+    '--tfg-danger': colors.danger,
+    '--tfg-danger-soft': blendOver(colors.danger, background, DANGER_SOFT_ALPHA, DEFAULT_COLORS.danger),
+    '--tfg-warn-bg': opaque(colors.overCapacity, DEFAULT_COLORS.overCapacity),
     '--tfg-warn-strong': darken(colors.overCapacity, OVER_CAPACITY_ACTIVE_DARKEN, DEFAULT_COLORS.overCapacity),
     '--tfg-warn-text': colors.overCapacityText,
   };

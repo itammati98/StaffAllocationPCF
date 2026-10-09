@@ -16,10 +16,15 @@
   --tfg-bg-subtle: #faf9f8;
   --tfg-hover: #f8f8f7;
   --tfg-text-muted: #605e5c;
-  --tfg-text-soft: #8a8886;
+  --tfg-text-soft: rgb(156, 154, 153);
   --tfg-border: #edebe9;
-  --tfg-border-strong: #d2d0ce;
+  --tfg-border-strong: rgb(209, 207, 205);
   --tfg-danger: #a4262c;
+  --tfg-danger-soft: rgb(248, 238, 238);
+  /* Opaque fills: the timeline scrolls under the pinned columns, so nothing here may be
+     translucent. src/colors.ts derives these from the maker's colours. */
+  --tfg-active-row: rgb(241, 246, 251);
+  --tfg-active-cell: rgb(231, 240, 248);
   --tfg-radius: 4px;
   --tfg-row-h: 40px;
   --tfg-head-h: 34px;
@@ -234,7 +239,7 @@
 }
 
 .tfg-iconbtn--danger:hover:not(:disabled) {
-  background: #fdf3f4;
+  background: var(--tfg-danger-soft);
   color: var(--tfg-danger);
 }
 
@@ -302,7 +307,7 @@
 }
 
 .tfg-banner--error {
-  background: #fdf3f4;
+  background: var(--tfg-danger-soft);
   color: var(--tfg-danger);
 }
 
@@ -386,7 +391,7 @@
 
   /* Native scrollbars, sized and coloured so they read as part of the grid. */
   scrollbar-width: thin;
-  scrollbar-color: #c8c6c4 transparent;
+  scrollbar-color: var(--tfg-border-strong) transparent;
 }
 
 .tfg-gridwrap::-webkit-scrollbar {
@@ -399,14 +404,14 @@
 }
 
 .tfg-gridwrap::-webkit-scrollbar-thumb {
-  background: #c8c6c4;
+  background: var(--tfg-border-strong);
   background-clip: padding-box;
   border: 3px solid transparent;
   border-radius: 8px;
 }
 
 .tfg-gridwrap::-webkit-scrollbar-thumb:hover {
-  background: #a19f9d;
+  background: var(--tfg-text-soft);
   background-clip: padding-box;
 }
 
@@ -574,10 +579,11 @@
   z-index: 7;
 }
 
-/* Focused cell: a filled, outlined cell that reads as the active cell of a spreadsheet. */
+/* Focused cell: a filled, outlined cell that reads as the active cell of a spreadsheet. The fill
+   is the opaque tint, so a pinned column never shows the timeline scrolling through it. */
 .tfg-table td[data-active] {
   box-shadow: inset 0 0 0 2px var(--tfg-accent);
-  background: var(--tfg-accent-soft);
+  background: var(--tfg-active-cell);
   z-index: 4;
 }
 
@@ -586,7 +592,7 @@
 }
 
 .tfg-table:not(:focus) td[data-active] {
-  background: var(--tfg-accent-soft);
+  background: var(--tfg-active-cell);
   box-shadow: inset 0 0 0 1px var(--tfg-accent);
 }
 
@@ -653,19 +659,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.tfg-tag {
-  flex: 0 0 auto;
-  padding: 0 5px;
-  border-radius: 8px;
-  background: var(--tfg-accent-soft);
-  color: var(--tfg-accent);
-  font-size: 9px;
-  font-style: normal;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
 }
 
 .tfg-rowactions {

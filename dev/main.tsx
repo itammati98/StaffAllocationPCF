@@ -18,6 +18,7 @@ function Harness(): React.ReactElement {
   const [allocations, setAllocations] = React.useState<AllocationEntry[]>(() => [...mockAllocations]);
   const [readOnly, setReadOnly] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(true);
+  const [showPricingBadge, setShowPricingBadge] = React.useState(true);
   const [pricingMethod, setPricingMethod] = React.useState<PricingMethod>('manualRate');
   const [colors, setColors] = React.useState<GridColors>(DEFAULT_COLORS);
   const [output, setOutput] = React.useState<GridOutput | null>(null);
@@ -27,8 +28,8 @@ function Harness(): React.ReactElement {
   const added = React.useRef(0);
 
   const host = React.useMemo<GridHostInputs>(
-    () => ({ ...mockHostInputs, readOnly, showNotifications, pricingMethod, colors }),
-    [readOnly, showNotifications, pricingMethod, colors],
+    () => ({ ...mockHostInputs, readOnly, showNotifications, showPricingBadge, pricingMethod, colors }),
+    [readOnly, showNotifications, showPricingBadge, pricingMethod, colors],
   );
 
   const fakeHost = React.useMemo(
@@ -107,6 +108,9 @@ function Harness(): React.ReactElement {
             <input type="checkbox" checked={showNotifications} onChange={(event) => setShowNotifications(event.target.checked)} /> Notifications
           </label>
           <label>
+            <input type="checkbox" checked={showPricingBadge} onChange={(event) => setShowPricingBadge(event.target.checked)} /> Pricing badge
+          </label>
+          <label>
             Pricing
             <select value={pricingMethod} onChange={(event) => setPricingMethod(event.target.value as PricingMethod)}>
               <option value="manualRate">Manual rate</option>
@@ -150,6 +154,11 @@ const COLOR_FIELDS: readonly { key: keyof GridColors; label: string }[] = [
   { key: 'text', label: 'Text' },
   { key: 'overCapacity', label: 'Over capacity' },
   { key: 'overCapacityText', label: 'Over capacity text' },
+  { key: 'border', label: 'Grid lines' },
+  { key: 'mutedText', label: 'Secondary text' },
+  { key: 'hover', label: 'Row hover' },
+  { key: 'subtleBackground', label: 'Toolbar' },
+  { key: 'danger', label: 'Danger' },
 ];
 
 const root = document.getElementById('root');

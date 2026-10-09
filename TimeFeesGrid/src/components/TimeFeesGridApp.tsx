@@ -162,6 +162,7 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
         density={density}
         phasing={phasing}
         pricingMethod={host.pricingMethod}
+        showPricingBadge={host.showPricingBadge}
         readOnly={readOnly}
         peopleCount={people.length}
         periodCount={columns.length}

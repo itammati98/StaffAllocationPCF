@@ -242,12 +242,18 @@ export function createFakeHost(options: FakeHostOptions): FakeHost {
         pricingMethod: { raw: host.pricingMethod, formatted: host.pricingMethod },
         readOnly: { raw: host.readOnly, formatted: String(host.readOnly) },
         showNotifications: { raw: host.showNotifications, formatted: String(host.showNotifications) },
+        showPricingBadge: { raw: host.showPricingBadge, formatted: String(host.showPricingBadge) },
         accentColor: { raw: host.colors.accent },
         backgroundColor: { raw: host.colors.background },
         headerColor: { raw: host.colors.header },
         textColor: { raw: host.colors.text },
         overCapacityColor: { raw: host.colors.overCapacity },
         overCapacityTextColor: { raw: host.colors.overCapacityText },
+        borderColor: { raw: host.colors.border },
+        mutedTextColor: { raw: host.colors.mutedText },
+        hoverColor: { raw: host.colors.hover },
+        subtleBackgroundColor: { raw: host.colors.subtleBackground },
+        dangerColor: { raw: host.colors.danger },
       };
       return { parameters } as unknown as ComponentFramework.Context<IInputs>;
     },
