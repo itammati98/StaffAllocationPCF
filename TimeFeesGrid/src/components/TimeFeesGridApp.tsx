@@ -32,7 +32,6 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
   const [people, setPeople] = React.useState<PersonRow[]>(() => [...snapshot.people]);
   const [store, setStore] = React.useState<AllocationStore>(() => createStore(snapshot.allocations));
   const [phasing, setPhasing] = React.useState<Phasing>(host.phasing);
-  const [helpOpen, setHelpOpen] = React.useState(false);
 
   const { message, show } = useTransientMessage();
   const revision = React.useRef(0);
@@ -168,10 +167,8 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
         periodCount={columns.length}
         hoursTotal={totalHours}
         outsideWindowHours={model.outsideWindowHours}
-        helpOpen={helpOpen}
         onPhasingChange={setPhasing}
         onAddStaff={handleRequestAddStaff}
-        onToggleHelp={() => setHelpOpen((open) => !open)}
       />
 
       {message ? (
@@ -179,8 +176,6 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
           <span className="tfg-status__text">{message.text}</span>
         </div>
       ) : null}
-
-      {helpOpen ? <HelpPanel onClose={() => setHelpOpen(false)} /> : null}
 
       {snapshot.error ? <div className="tfg-banner tfg-banner--error">{snapshot.error}</div> : null}
       {warnings.length > 0 ? (
@@ -220,91 +215,5 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
         <span className="tfg-hint__legend">Hours spread over the working days of each period. Fee = hours &times; RPH. GM% is margin on cost.</span>
       </div>
     </div>
-  );
-}
-
-const HELP_SECTIONS: { title: string; items: [string, string][] }[] = [
-  {
-    title: 'Keyboard',
-    items: [
-      ['Arrow keys', 'Move between cells; while a value is being typed they apply it and move on'],
-      ['Enter / F2', 'Edit the focused cell'],
-      ['Esc', 'Leave the editor without applying the value'],
-      ['Tab / Shift+Tab', 'Apply the value and move one cell right or left'],
-      ['Home / End', 'First or last column of the row; with Ctrl, first or last cell of the grid'],
-      ['Page Up / Page Down', 'Move one screen of rows'],
-      ['Del / Backspace', 'Clear the focused cell'],
-    ],
-  },
-  {
-    title: 'How hours are booked',
-    items: [
-      ['Working days', 'Hours are booked on working days only; weekends never receive hours'],
-      ['Spread', 'A fixed number of hours is booked day by day at the daily rate (8h by default): 20h in a week books 8h, 8h and 4h'],
-      ['Over capacity', 'More hours than the period can hold (working days x daily hours) are spread evenly and the period is flagged'],
-      ['Fill row', 'Repeats the first period that has hours across every following period'],
-    ],
-  },
-  {
-    title: 'Calculated values',
-    items: [
-      ['Fee (k)', 'Booked hours x RPH, shown in thousands'],
-      ['REAL%', 'RPH divided by STD (the standard rate)'],
-      ['GM%', "Margin on cost: (time fees - cost) / cost, using each person's cost rate"],
-      ['Averages', 'RPH and STD in the totals row are weighted by booked hours; REAL% there is the blended ratio of the two'],
-      ['Outside the window', 'Hours booked outside the workstream window are kept untouched and listed above the grid'],
-      [
-        'Pricing',
-        'Set by the app: manual rate adjustment lets you type RPH and derives REAL%; realisation adjustment lets you type REAL% and derives RPH',
-      ],
-    ],
-  },
-  {
-    title: 'What comes from the app',
-    items: [
-      ['Read-only columns', "People, job levels, teams and standard rates come from the app's people table and cannot be typed over"],
-      [
-        'Add staff / Remove',
-        'Both ask the app to make the change: the request is published on this component\'s Changes output (action "addStaffRequested" or "removePersonRequested" with personName) and the app acts on it',
-      ],
-      ['Data in', 'People, bookings and the timeline arrive from the bound tables; a timeline is generated from the workstream start and number of weeks when it is not bound'],
-      ['Data out', 'Every change is published to the app as changes; the app writes it back to its collections'],
-    ],
-  },
-];
-
-function HelpPanel(props: { onClose: () => void }): React.ReactElement {
-  React.useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') props.onClose();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [props]);
-
-  return (
-    <section className="tfg-help" aria-label="How the allocation grid works">
-      <div className="tfg-help__head">
-        <h2 className="tfg-help__title">Time &amp; fees</h2>
-        <button type="button" className="tfg-btn tfg-btn--small" onClick={props.onClose}>
-          Close
-        </button>
-      </div>
-      <div className="tfg-help__grid">
-        {HELP_SECTIONS.map((section) => (
-          <div key={section.title} className="tfg-help__section">
-            <h3 className="tfg-help__heading">{section.title}</h3>
-            <dl className="tfg-help__list">
-              {section.items.map(([term, description]) => (
-                <React.Fragment key={term}>
-                  <dt>{term}</dt>
-                  <dd>{description}</dd>
-                </React.Fragment>
-              ))}
-            </dl>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }

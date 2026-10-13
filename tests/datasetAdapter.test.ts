@@ -152,10 +152,14 @@ describe('people', () => {
     expect(snapshot.people[0].realisation).toBeCloseTo(180 / 190, 6);
   });
 
-  it('keys rows by record id and falls back to the name', () => {
-    const rows: FakeRow[] = [alice(), { id: null, values: { '[Name]': 'Bob Brown', RPH: 1, FeeRate: 2 } }];
+  it('keys rows by name, whatever record id the host supplies, and numbers repeated names', () => {
+    const rows: FakeRow[] = [
+      alice(),
+      { id: null, values: { '[Name]': 'Bob Brown', RPH: 1, FeeRate: 2 } },
+      { id: 'other', values: { '[Name]': 'Bob Brown', RPH: 1, FeeRate: 2 } },
+    ];
     const snapshot = readSnapshot({ people: dataset(PEOPLE_COLUMNS, rows) }, HOST);
-    expect(snapshot.people.map((person) => person.key)).toEqual(['alice-record', 'Bob Brown']);
+    expect(snapshot.people.map((person) => person.key)).toEqual(['Alice Adams', 'Bob Brown', 'Bob Brown#2']);
   });
 
   it('drops rows without a name and reports them', () => {
@@ -224,7 +228,7 @@ describe('allocations', () => {
     );
     const snapshot = readSnapshot({ people: dataset(PEOPLE_COLUMNS, [alice()]), allocations }, HOST);
 
-    expect(snapshot.allocations).toEqual([{ personKey: 'alice-record', dateKey: '2026-01-05', hours: 8 }]);
+    expect(snapshot.allocations).toEqual([{ personKey: 'Alice Adams', dateKey: '2026-01-05', hours: 8 }]);
   });
 
   it('resolves names to people and keeps hours of unknown people', () => {
@@ -236,7 +240,7 @@ describe('allocations', () => {
     ]);
     const snapshot = readSnapshot({ people, allocations }, HOST);
     expect(snapshot.allocations).toEqual([
-      { personKey: 'alice-record', dateKey: '2026-01-05', hours: 7.5 },
+      { personKey: 'Alice Adams', dateKey: '2026-01-05', hours: 7.5 },
       { personKey: 'Ghost Writer', dateKey: '2026-01-06', hours: 6 },
     ]);
     expect(snapshot.warnings.some((warning) => /not in the people list/i.test(warning))).toBe(true);

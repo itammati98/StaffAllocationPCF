@@ -80,7 +80,7 @@ describe('component / host round trip', () => {
     const rebased = view(component, host);
     expect(rebased.snapshotVersion).toBe(afterEdit.snapshotVersion + 1);
     expect(rebased.snapshot).not.toBe(afterEdit.snapshot);
-    expect(rebased.snapshot.allocations).toContainEqual({ personKey: 'person-bob', dateKey: '2026-01-05', hours: 6 });
+    expect(rebased.snapshot.allocations).toContainEqual({ personKey: 'Bob Brown', dateKey: '2026-01-05', hours: 6 });
     expect(component.getOutputs().changes).toBe(edited);
     expect(notified.count).toBe(1);
   });
@@ -103,5 +103,54 @@ describe('component / host round trip', () => {
     });
     expect(notified.count).toBe(1);
     expect(component.getOutputs()).not.toBe(outputs);
+  });
+});
+
+describe('component / paged host', () => {
+  it('raises the page size, loads every page, and never rebases onto a partial delivery', () => {
+    const { component, host } = setup();
+    const mounted = view(component, host);
+
+    // The host delivers the bookings one page at a time: the first page only, with more to come.
+    const calls = { setPageSize: 0, refresh: 0, loadNextPage: 0 };
+    let pages = 1;
+    const paged = (context: ReturnType<FakeHost['context']>): ReturnType<FakeHost['context']> => {
+      const parameters = context.parameters as unknown as Record<string, Record<string, unknown>>;
+      const bookings = parameters.gridAllocations;
+      const all = (bookings.sortedRecordIds as string[]).slice();
+      const visible = pages === 1 ? all.slice(0, 2) : all;
+      Object.defineProperty(bookings, 'sortedRecordIds', { get: () => visible });
+      const records = bookings.records as Record<string, unknown>;
+      Object.defineProperty(bookings, 'records', {
+        get: () => Object.fromEntries(visible.map((id) => [id, records[id]])),
+      });
+      bookings.paging = {
+        pageSize: 25,
+        hasNextPage: pages === 1,
+        setPageSize: () => (calls.setPageSize += 1),
+        loadNextPage: () => {
+          calls.loadNextPage += 1;
+          pages = 2;
+        },
+      };
+      bookings.refresh = () => (calls.refresh += 1);
+      return context;
+    };
+
+    // Someone else changes the bookings; the first delivery is partial.
+    host.setCollections({ allocations: [...mockAllocations, { personKey: 'Bob Brown', dateKey: '2026-01-05', hours: 6 }] });
+    const partial = component.updateView(paged(host.context())) as ReactElement<TimeFeesGridAppProps>;
+    expect(calls.setPageSize).toBe(1);
+    expect(calls.refresh).toBe(1);
+    expect(partial.props.snapshot).toBe(mounted.snapshot);
+
+    const stillPartial = component.updateView(paged(host.context())) as ReactElement<TimeFeesGridAppProps>;
+    expect(calls.loadNextPage).toBe(1);
+    expect(stillPartial.props.snapshot).toBe(mounted.snapshot);
+
+    // Every page has arrived: the grid rebases onto the whole table.
+    const complete = component.updateView(paged(host.context())) as ReactElement<TimeFeesGridAppProps>;
+    expect(complete.props.snapshotVersion).toBe(mounted.snapshotVersion + 1);
+    expect(complete.props.snapshot.allocations).toHaveLength(mockAllocations.length + 1);
   });
 });

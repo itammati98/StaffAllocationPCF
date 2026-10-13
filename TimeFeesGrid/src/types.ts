@@ -8,9 +8,9 @@
  * allocation      hours booked by one person on one day (colAllocatedHours)
  * period column   one editable column of the grid: a day, a week or a month
  *
- * Allocation identity is `${personKey}|${dateKey}`. `personKey` is the record id when the host
- * supplies one, otherwise the person name; rows added inside the component get a generated key.
- * Allocations coming from the host are resolved from the `Name` column to a person key.
+ * Allocation identity is `${personKey}|${dateKey}`. `personKey` is the person name (a repeated
+ * name gets a numbered key). Allocations coming from the host are resolved from the `Name` column
+ * to a person key.
  */
 
 import type { GridColors } from './colors';
@@ -36,7 +36,7 @@ export type GridAction =
 
 /** One person row, normalised from the host dataset. */
 export interface PersonRow {
-  /** Stable identity inside the component: host record id, else name, else a generated key. */
+  /** Stable identity inside the component: the person name, numbered when a name repeats. */
   key: string;
   name: string;
   jobLevel: string;

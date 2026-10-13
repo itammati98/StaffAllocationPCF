@@ -504,22 +504,6 @@ function toBoolean(value: unknown): boolean {
   return false;
 }
 
-/** Record id when the host supplies one, else the supplied fallback (the person name). */
-function readRecordKey(record: EntityRecord, fallback: string): string {
-  try {
-    const id = record.getRecordId();
-    if (typeof id === 'string') {
-      const trimmed = id.trim();
-      if (trimmed.length > 0) {
-        return trimmed;
-      }
-    }
-  } catch {
-    // Fall through to the name.
-  }
-  return fallback;
-}
-
 function datasetLoading(dataset: DataSet | undefined): boolean {
   if (!dataset) {
     return false;
@@ -568,6 +552,7 @@ function readPeople(dataset: DataSet | undefined, warnings: WarningBag): PersonR
   const currencyField = resolveField(dataset, CURRENCY_COLUMNS, true);
 
   const people: PersonRow[] = [];
+  const seenNames = new Map<string, number>();
   let nameless = 0;
 
   for (const record of records) {
@@ -579,8 +564,13 @@ function readPeople(dataset: DataSet | undefined, warnings: WarningBag): PersonR
     const feeRate = readNumber(record, feeRateField);
     const rph = readNumber(record, rphField);
     const suppliedRealisation = readNumber(record, realisationField);
+    // People are keyed by name, the identity the app's formulas and the published payload use.
+    // Canvas record ids are regenerated whenever a collection is rewritten, so they cannot tie a
+    // row to its bookings across deliveries. A repeated name gets a numbered key of its own.
+    const occurrence = (seenNames.get(name) ?? 0) + 1;
+    seenNames.set(name, occurrence);
     people.push({
-      key: readRecordKey(record, name),
+      key: occurrence === 1 ? name : `${name}#${occurrence}`,
       name,
       jobLevel: readText(record, jobLevelField),
       team: readText(record, teamField),

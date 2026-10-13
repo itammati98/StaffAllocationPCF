@@ -16,6 +16,11 @@ import { GridHostInputs, GridOutput, GridSnapshot, Phasing, PricingMethod, TimeF
 /** Enum option order must match the manifest: Daily, Weekly, Monthly. */
 const PHASINGS: readonly Phasing[] = ['daily', 'weekly', 'monthly'];
 
+/** Records requested per page: a year of daily bookings for a large team fits in one page. */
+const PAGE_SIZE = 5000;
+/** Upper bound on consecutive page requests before the grid reads whatever has arrived. */
+const MAX_PAGE_REQUESTS = 50;
+
 /**
  * Static schema for the Changes output. Canvas apps read it through getOutputSchema so makers get
  * type-ahead on `Component.Changes`, and it is echoed back through the hidden dataSchema property.
@@ -83,6 +88,10 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
   private snapshotVersion = 0;
   private snapshot: GridSnapshot | null = null;
   private colors: GridColors = DEFAULT_COLORS;
+  /** Datasets whose page size has already been raised. */
+  private readonly pageSized = new Set<string>();
+  /** Consecutive page requests made without the datasets becoming complete. */
+  private pageRequests = 0;
 
   public init(context: ComponentFramework.Context<IInputs>, notifyOutputChanged: () => void): void {
     this.notifyOutputChanged = notifyOutputChanged;
@@ -90,7 +99,18 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
 
   public updateView(context: ComponentFramework.Context<IInputs>): React.ReactElement {
     const host = this.readHostInputs(context);
-    const parsed = readSnapshot(this.readDatasets(context), host);
+    const datasets = this.readDatasets(context);
+
+    // A canvas host delivers a dataset one page at a time, and Fill multiplies the booking rows
+    // (one per person per working day) well past the default page. A partial delivery must never
+    // rebase the grid - it would drop every booking beyond the first page - so keep showing what
+    // the grid already holds and wait for the remaining pages.
+    const complete = this.requestAllRecords(datasets);
+    if (!complete && this.snapshot !== null) {
+      return this.render(host, this.snapshot);
+    }
+
+    const parsed = readSnapshot(datasets, host);
     const signature = snapshotSignature(parsed);
 
     // A canvas app re-delivers every bound dataset whenever any of its collections changes, so most
@@ -120,6 +140,10 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       this.snapshot = parsed;
     }
 
+    return this.render(host, snapshot);
+  }
+
+  private render(host: GridHostInputs, snapshot: GridSnapshot): React.ReactElement {
     const appProps: TimeFeesGridAppProps = {
       host,
       snapshot,
@@ -127,6 +151,51 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       onChange: this.handleChange,
     };
     return React.createElement(TimeFeesGridApp, appProps);
+  }
+
+  /**
+   * Asks the host for every record of every bound dataset: raises the page size once, then loads
+   * any further page. Returns false while a dataset is still loading or has records left to fetch.
+   * After `MAX_PAGE_REQUESTS` consecutive incomplete deliveries the data is taken as it is, so a
+   * host that keeps reporting another page (or keeps loading) can never freeze the grid.
+   */
+  private requestAllRecords(datasets: AdapterDatasets): boolean {
+    if (this.pageRequests >= MAX_PAGE_REQUESTS) {
+      this.pageRequests = 0;
+      return true;
+    }
+    let complete = true;
+    for (const [name, dataset] of Object.entries(datasets) as [string, ComponentFramework.PropertyTypes.DataSet | undefined][]) {
+      if (!dataset) continue;
+      try {
+        if (dataset.loading === true) {
+          this.pageRequests += 1;
+          complete = false;
+          continue;
+        }
+        const paging = dataset.paging;
+        if (!paging) continue;
+        if (!this.pageSized.has(name) && typeof paging.setPageSize === 'function') {
+          this.pageSized.add(name);
+          if (!(paging.pageSize >= PAGE_SIZE)) {
+            paging.setPageSize(PAGE_SIZE);
+            dataset.refresh();
+            this.pageRequests += 1;
+            complete = false;
+            continue;
+          }
+        }
+        if (paging.hasNextPage === true) {
+          paging.loadNextPage();
+          this.pageRequests += 1;
+          complete = false;
+        }
+      } catch {
+        // A host without paging support delivers everything it has; read it as it is.
+      }
+    }
+    if (complete) this.pageRequests = 0;
+    return complete;
   }
 
   public getOutputs(): IOutputs {
