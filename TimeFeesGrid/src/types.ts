@@ -81,10 +81,10 @@ export type AllocationStore = ReadonlyMap<string, number>;
 
 /** One editable column of the grid. */
 export interface PeriodColumn {
-  /** `d:2026-01-05` | `w:2026-3` | `m:2026-1`. */
+  /** `d:2026-01-05` | `w:2026-01-05` (the Monday of the week) | `m:2026-1`. */
   id: string;
   phasing: Phasing;
-  /** `W3` | `Day 12` | `Jan 26`. */
+  /** `W3` (ISO week) | `Day 12` | `Jan 26`. */
   label: string;
   /** Secondary label: `05 Jan` for days and weeks, empty for months. */
   subLabel: string;
@@ -118,6 +118,8 @@ export interface GridRow {
   realisation: number;
   /** Hours this person has outside the workstream window; still reported back to the host. */
   outsideWindowHours: number;
+  /** The days behind `outsideWindowHours`, oldest first. */
+  outsideWindow: { dateKey: string; hours: number }[];
 }
 
 /** Aggregated figures for the totals row. */
@@ -159,6 +161,8 @@ export interface GridHostInputs {
   showNotifications: boolean;
   /** False hides the chip that names the pricing mode the app set. */
   showPricingBadge: boolean;
+  /** Public holidays (`YYYY-MM-DD`) the app lists; they are never working days. */
+  holidays: string[];
   /** Studio-configured palette, applied to the grid root as CSS custom properties. */
   colors: GridColors;
 }

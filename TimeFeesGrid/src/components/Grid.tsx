@@ -1,6 +1,18 @@
 import * as React from 'react';
 import { ColumnLayout, DENSITY, Density, stickyLeftWidth, stickyRightWidth } from '../gridColumns';
-import { avatarTone, formatEditableNumber, formatHours, formatPercent, formatRate, formatThousands, initials, parseEditableNumber } from '../format';
+import {
+  avatarTone,
+  formatDateKey,
+  formatEditableNumber,
+  formatHours,
+  formatPercent,
+  formatRate,
+  formatThousands,
+  formatTotalHours,
+  formatTotalThousands,
+  initials,
+  parseEditableNumber,
+} from '../format';
 import { GridModel, GridRow, PeriodColumn, PricingMethod } from '../types';
 
 export interface CellRef {
@@ -19,6 +31,8 @@ interface GridProps {
   density: Density;
   readOnly: boolean;
   pricingMethod: PricingMethod;
+  /** True while the toolbar's outside-the-window chip filters the rows: their Hours cells are flagged. */
+  highlightOutside: boolean;
   onSetHours: (rowKey: string, column: PeriodColumn, hours: number) => void;
   onSetRate: (rowKey: string, field: 'rph' | 'realisation', value: number) => void;
   onFillRight: (rowKey: string) => void;
@@ -44,7 +58,7 @@ const GRID_LABEL = 'Time and fees allocation grid';
  * are the app's data, not the grid's.
  */
 export function Grid(props: GridProps): React.ReactElement {
-  const { layout, model, density, readOnly, pricingMethod, onSetHours, onSetRate, onFillRight, onRequestRemove, onNotice } = props;
+  const { layout, model, density, readOnly, pricingMethod, highlightOutside, onSetHours, onSetRate, onFillRight, onRequestRemove, onNotice } = props;
 
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const tableRef = React.useRef<HTMLTableElement>(null);
@@ -516,16 +530,13 @@ export function Grid(props: GridProps): React.ReactElement {
 
     const numeric = periodValueFor(row, column);
     const editable = isNumberCell(row, column);
-    const outside = row.outsideWindowHours;
+    const outside = column.kind === 'totalHours' && row.outsideWindowHours > 0;
     return (
       <td
         {...base}
         data-locked={!editable || undefined}
-        title={
-          column.kind === 'totalHours' && outside > 0
-            ? `${formatHours(outside)}h booked outside the workstream window is left untouched`
-            : undefined
-        }
+        data-outside={(outside && highlightOutside) || undefined}
+        title={outside ? outsideWindowTitle(row) : undefined}
         onMouseDown={(event) => handleCellPointerDown(event, rowIndex, colIndex)}
         onDoubleClick={() => handleCellDoubleClick(rowIndex, colIndex)}
       >
@@ -587,15 +598,15 @@ export function Grid(props: GridProps): React.ReactElement {
             className={`tfg-tf tfg-tf--period tfg-align--end${stickyClass(column)}`}
             style={cellStyle(column)}
           >
-            {formatHours(hours)}
+            {formatTotalHours(hours)}
           </td>
         );
       }
       case 'totalHours':
-        content = formatHours(totals.hoursTotal);
+        content = formatTotalHours(totals.hoursTotal);
         break;
       case 'fee':
-        content = formatThousands(totals.fee);
+        content = formatTotalThousands(totals.fee);
         break;
       case 'gm':
         content = formatPercent(totals.gm);
@@ -619,7 +630,7 @@ export function Grid(props: GridProps): React.ReactElement {
   // An empty grid keeps the header and totals out of the table model, so assistive technology never
   // sees a row count that disagrees with the rows on screen.
   if (rows.length === 0) {
-    return <div className="tfg-placeholder">No people to allocate. Bind the people table or use Add staff.</div>;
+    return <div className="tfg-placeholder">No people added yet &ndash; use Add staff to book hours.</div>;
   }
 
   // Fixed column widths give the row its minimum size; the flexible spacer column takes whatever is
@@ -668,6 +679,12 @@ export function Grid(props: GridProps): React.ReactElement {
       </table>
     </div>
   );
+}
+
+/** Tooltip for a row's Hours cell: the hours kept outside the window, day by day. */
+function outsideWindowTitle(row: GridRow): string {
+  const days = row.outsideWindow.map((day) => `${formatDateKey(day.dateKey)} (${formatHours(day.hours)}h)`);
+  return `${formatHours(row.outsideWindowHours)}h booked outside the workstream window, left untouched: ${days.join(', ')}`;
 }
 
 /** Job level and team, plus the rates that the narrow density hides as columns. */

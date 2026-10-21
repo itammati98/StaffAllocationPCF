@@ -86,6 +86,10 @@
   <data name="ShowNotifications_Desc" xml:space="preserve">
     <value>Turn on to show the dataset warnings above the timeline (for example when an optional table is not bound). Turn off to keep the grid silent.</value>
   </data>
+  <data name="Holidays_Display" xml:space="preserve"><value>Public holidays</value></data>
+  <data name="Holidays_Desc" xml:space="preserve">
+    <value>Optional. Dates that are not working days, as a JSON list such as ["2026-12-25","2026-12-28"] or JSON(colHolidays). Hours are never spread onto them and they do not count towards a period's capacity. Leave empty to treat every Monday to Friday as a working day.</value>
+  </data>
   <data name="ShowPricingBadge_Display" xml:space="preserve"><value>Show pricing badge</value></data>
   <data name="ShowPricingBadge_Desc" xml:space="preserve">
     <value>Turn on to show the chip in the toolbar that names the pricing mode the app set (manual rate adjustment or realisation adjustment). Turn off to leave the grid unlabelled; the mode still decides which rate is editable.</value>

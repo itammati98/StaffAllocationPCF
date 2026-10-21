@@ -65,6 +65,7 @@ const HOST: GridHostInputs = {
   readOnly: false,
   showNotifications: true,
   showPricingBadge: true,
+  holidays: [],
   colors: DEFAULT_COLORS,
 };
 

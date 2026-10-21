@@ -13,6 +13,7 @@
 import {
   buildTimeline,
   isWorkingDay,
+  isoWeek,
   realisationFromRph,
   round6,
   toDate,
@@ -90,6 +91,12 @@ export function readSnapshot(datasets: AdapterDatasets, host: GridHostInputs): G
         ? `The timeline table's ${count(timelineRead.rows, 'row')} could not be read, so the grid generated a ${weeks}-week timeline starting ${toDateKey(start)}.`
         : `The timeline dataset is empty, so the grid generated a ${weeks}-week timeline starting ${toDateKey(start)}.`
     );
+  }
+
+  // Public holidays the app lists are not working days: no column books hours on them.
+  if (host.holidays.length > 0) {
+    const holidays = new Set(host.holidays);
+    timeline = timeline.map((day) => (day.isWorkingDay && holidays.has(day.dateKey) ? { ...day, isWorkingDay: false } : day));
   }
 
   const error =
@@ -257,6 +264,35 @@ export function clampHoursPerDay(hoursPerDay: number): number {
     return DEFAULT_HOURS_PER_DAY;
   }
   return Math.min(MAX_HOURS_PER_DAY, Math.max(MIN_HOURS_PER_DAY, value));
+}
+
+/**
+ * Reads the holidays property: a JSON list of dates (`["2026-12-25","2026-12-28"]`), a JSON list
+ * of records whose first readable value is a date (what `JSON(colHolidays)` produces), or plain
+ * text with the dates separated by commas, semicolons or whitespace. Returns sorted, de-duplicated
+ * `YYYY-MM-DD` keys; anything unreadable is ignored.
+ */
+export function parseHolidays(value: unknown): string[] {
+  if (typeof value !== 'string' || value.trim() === '') return [];
+  let items: unknown[];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    items = Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    items = value.split(/[\s,;]+/);
+  }
+  const keys = new Set<string>();
+  for (const item of items) {
+    const candidates = item !== null && typeof item === 'object' ? Object.values(item as Record<string, unknown>) : [item];
+    for (const candidate of candidates) {
+      const date = typeof candidate === 'string' ? toDate(candidate) : null;
+      if (date) {
+        keys.add(toDateKey(date));
+        break;
+      }
+    }
+  }
+  return [...keys].sort();
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -777,7 +813,7 @@ function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): { day
           ? row.weekNum
           : row.value > 0
             ? Math.ceil(row.value / 5)
-            : isoWeekNumber(row.date),
+            : isoWeek(row.date).week,
       monthNum: row.monthNum >= 1 && row.monthNum <= 12 ? row.monthNum : row.date.getMonth() + 1,
       yearNum: row.yearNum > 1900 ? row.yearNum : row.date.getFullYear(),
       isWorkingDay: working,
@@ -788,15 +824,6 @@ function readTimeline(dataset: DataSet | undefined, warnings: WarningBag): { day
     left.dateKey < right.dateKey ? -1 : left.dateKey > right.dateKey ? 1 : 0
   );
   return { days, rows: records.length };
-}
-
-/** ISO-8601 week number of a local date (weeks start on Monday, week 1 holds the first Thursday). */
-function isoWeekNumber(date: Date): number {
-  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNumber = target.getUTCDay() === 0 ? 7 : target.getUTCDay();
-  target.setUTCDate(target.getUTCDate() + 4 - dayNumber);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  return Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 // ---------------------------------------------------------------------------------------------

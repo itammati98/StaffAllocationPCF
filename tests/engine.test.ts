@@ -90,7 +90,7 @@ describe('2. buildColumns phasings', () => {
     expect(daily[0].id).toBe('d:2026-01-05');
     expect(daily[0].label).toBe('Day 1');
     expect(daily[0].subLabel).toBe('05 Jan');
-    expect(daily[0].title).toBe('Monday 05 Jan 2026, week 1');
+    expect(daily[0].title).toBe('Monday 05 Jan 2026, ISO week 2');
     expect(daily[0].capacity).toBe(8);
     expect(daily[0].dateKeys).toEqual(['2026-01-05']);
     expect(daily[0].phasing).toBe('daily');
@@ -99,12 +99,13 @@ describe('2. buildColumns phasings', () => {
   it('builds weekly columns', () => {
     const weekly = buildColumns(timeline, 'weekly', 8);
     expect(weekly).toHaveLength(2);
-    expect(weekly[0].id).toBe('w:2026-1');
-    expect(weekly[0].label).toBe('W1');
+    // Keyed by the Monday of the week and labelled with its ISO week (5 Jan 2026 is ISO W2).
+    expect(weekly[0].id).toBe('w:2026-01-05');
+    expect(weekly[0].label).toBe('W2');
     expect(weekly[0].subLabel).toBe('05 Jan');
-    expect(weekly[0].title).toBe('Week 1, 05 Jan - 09 Jan 2026');
+    expect(weekly[0].title).toBe('Week 2 of 2026, 05 Jan - 09 Jan 2026, 5 working days');
     expect(weekly[0].capacity).toBe(40);
-    expect(weekly[1].id).toBe('w:2026-2');
+    expect(weekly[1].id).toBe('w:2026-01-12');
     expect(weekly[1].subLabel).toBe('12 Jan');
   });
 
@@ -130,18 +131,21 @@ describe('2. buildColumns phasings', () => {
 });
 
 describe('3. distributeHours', () => {
-  it('front loads below capacity', () => {
-    expect(distributeHours(20, 5, 8)).toEqual([8, 8, 4, 0, 0]);
+  it('spreads evenly over the working days instead of filling the first days', () => {
+    expect(distributeHours(20, 5, 8)).toEqual([4, 4, 4, 4, 4]);
     expect(distributeHours(40, 5, 8)).toEqual([8, 8, 8, 8, 8]);
-    expect(distributeHours(7.5, 5, 8)).toEqual([7.5, 0, 0, 0, 0]);
+    expect(distributeHours(7.5, 5, 8)).toEqual([1.5, 1.5, 1.5, 1.5, 1.5]);
   });
 
-  it('spreads evenly as integers above capacity, with the spare hours at the end', () => {
-    expect(distributeHours(41, 5, 8)).toEqual([8, 8, 8, 8, 9]);
-    expect(distributeHours(180, 22, 8)).toEqual([
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-      9, 9, 9, 9,
-    ]);
+  it('puts the rounding remainder on the last day', () => {
+    expect(distributeHours(10, 3, 8)).toEqual([3.33, 3.33, 3.34]);
+    expect(distributeHours(22, 5, 8)).toEqual([4.4, 4.4, 4.4, 4.4, 4.4]);
+    expect(distributeHours(1, 3, 8)).toEqual([0.33, 0.33, 0.34]);
+  });
+
+  it('spreads the same way above capacity', () => {
+    expect(distributeHours(41, 5, 8)).toEqual([8.2, 8.2, 8.2, 8.2, 8.2]);
+    expect(distributeHours(180, 22, 8)).toEqual([...new Array<number>(21).fill(8.18), 8.22]);
   });
 
   it('handles empty and zero inputs', () => {
@@ -166,41 +170,38 @@ describe('4. setColumnHours', () => {
   const weekly = buildColumns(timeline, 'weekly', 8);
   const empty = createStore([]);
 
-  it('front loads 20h onto the first three working days of a week', () => {
+  it('spreads 20h evenly over the five working days of a week', () => {
     const store = setColumnHours(empty, weekly[0], 'p1', 20, 8);
-    expect(storeHours(store, 'p1', '2026-01-05')).toBe(8);
-    expect(storeHours(store, 'p1', '2026-01-06')).toBe(8);
-    expect(storeHours(store, 'p1', '2026-01-07')).toBe(4);
-    expect(storeHours(store, 'p1', '2026-01-08')).toBe(0);
-    expect(storeHours(store, 'p1', '2026-01-09')).toBe(0);
+    for (const dateKey of ['2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09']) {
+      expect(storeHours(store, 'p1', dateKey)).toBe(4);
+    }
   });
 
   it('replaces instead of accumulating on re-entry', () => {
     const first = setColumnHours(empty, weekly[0], 'p1', 20, 8);
     const second = setColumnHours(first, weekly[0], 'p1', 16, 8);
-    expect(storeHours(second, 'p1', '2026-01-05')).toBe(8);
-    expect(storeHours(second, 'p1', '2026-01-06')).toBe(8);
-    expect(storeHours(second, 'p1', '2026-01-07')).toBe(0);
-    expect([...second.keys()].filter((key) => key.startsWith('p1|'))).toHaveLength(2);
+    expect(storeHours(second, 'p1', '2026-01-05')).toBe(3.2);
+    expect(storeHours(second, 'p1', '2026-01-09')).toBe(3.2);
+    expect([...second.values()].reduce((total, value) => total + value, 0)).toBeCloseTo(16, 6);
+    expect([...second.keys()].filter((key) => key.startsWith('p1|'))).toHaveLength(5);
   });
 
   it('clears only the target column when set to zero', () => {
     const withTwoWeeks = setColumnHours(setColumnHours(empty, weekly[0], 'p1', 20, 8), weekly[1], 'p1', 24, 8);
     const cleared = setColumnHours(withTwoWeeks, weekly[0], 'p1', 0, 8);
     expect(storeHours(cleared, 'p1', '2026-01-05')).toBe(0);
-    expect(storeHours(cleared, 'p1', '2026-01-12')).toBe(8);
-    expect(storeHours(cleared, 'p1', '2026-01-13')).toBe(8);
-    expect(storeHours(cleared, 'p1', '2026-01-14')).toBe(8);
+    expect(storeHours(cleared, 'p1', '2026-01-09')).toBe(0);
+    expect(storeHours(cleared, 'p1', '2026-01-12')).toBe(4.8);
+    expect(storeHours(cleared, 'p1', '2026-01-16')).toBe(4.8);
   });
 
   it('leaves other people untouched', () => {
     const withP1 = setColumnHours(empty, weekly[0], 'p1', 20, 8);
     const withBoth = setColumnHours(withP1, weekly[0], 'p2', 12, 8);
-    expect(storeHours(withBoth, 'p1', '2026-01-05')).toBe(8);
-    expect(storeHours(withBoth, 'p1', '2026-01-06')).toBe(8);
-    expect(storeHours(withBoth, 'p1', '2026-01-07')).toBe(4);
-    expect(storeHours(withBoth, 'p2', '2026-01-05')).toBe(8);
-    expect(storeHours(withBoth, 'p2', '2026-01-06')).toBe(4);
+    expect(storeHours(withBoth, 'p1', '2026-01-05')).toBe(4);
+    expect(storeHours(withBoth, 'p1', '2026-01-09')).toBe(4);
+    expect(storeHours(withBoth, 'p2', '2026-01-05')).toBe(2.4);
+    expect(storeHours(withBoth, 'p2', '2026-01-09')).toBe(2.4);
   });
 
   it('writes nothing for a weekend-only bucket', () => {
@@ -244,11 +245,11 @@ describe('6. fillRight', () => {
     const filled = fillRight(store, weekly, 'p', 8);
     expect(storeHours(filled, 'p', '2026-01-05')).toBe(0);
     expect(storeHours(filled, 'p', '2026-01-12')).toBe(16);
-    expect(storeHours(filled, 'p', '2026-01-19')).toBe(8);
-    expect(storeHours(filled, 'p', '2026-01-20')).toBe(8);
-    expect(storeHours(filled, 'p', '2026-01-21')).toBe(0);
-    expect(storeHours(filled, 'p', '2026-01-26')).toBe(8);
-    expect(storeHours(filled, 'p', '2026-01-27')).toBe(8);
+    // The 16h week is repeated, spread evenly: 3.2h on each working day.
+    expect(storeHours(filled, 'p', '2026-01-19')).toBe(3.2);
+    expect(storeHours(filled, 'p', '2026-01-23')).toBe(3.2);
+    expect(storeHours(filled, 'p', '2026-01-26')).toBe(3.2);
+    expect(storeHours(filled, 'p', '2026-01-30')).toBe(3.2);
   });
 
   it('is a no-op for an empty row', () => {

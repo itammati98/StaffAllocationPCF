@@ -6,6 +6,7 @@ import {
   clampHoursPerDay,
   clampWeeks,
   outputSignature,
+  parseHolidays,
   readSnapshot,
   snapshotSignature,
 } from './src/datasetAdapter';
@@ -92,6 +93,8 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
   private readonly pageSized = new Set<string>();
   /** Consecutive page requests made without the datasets becoming complete. */
   private pageRequests = 0;
+  private holidaysText = '';
+  private holidays: string[] = [];
 
   public init(context: ComponentFramework.Context<IInputs>, notifyOutputChanged: () => void): void {
     this.notifyOutputChanged = notifyOutputChanged;
@@ -270,8 +273,19 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       showPricingBadge: parameters.showPricingBadge?.raw === undefined || parameters.showPricingBadge?.raw === null
         ? true
         : readBoolean(parameters.showPricingBadge.raw),
+      holidays: this.readHolidays((parameters as unknown as Record<string, { raw?: unknown } | undefined>).holidays?.raw),
       colors: this.colors,
     };
+  }
+
+  /** The parsed list is kept while the text is unchanged, so repeated pushes reuse it. */
+  private readHolidays(raw: unknown): string[] {
+    const text = typeof raw === 'string' ? raw : '';
+    if (text !== this.holidaysText) {
+      this.holidaysText = text;
+      this.holidays = parseHolidays(text);
+    }
+    return this.holidays;
   }
 }
 

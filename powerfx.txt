@@ -38,7 +38,7 @@
 //      Timeline.Weekday   1 = Monday .. 7 = Sunday; 6 and 7 never take hours
 //      Timeline.Value     1-based working-day ordinal; WeekNum = RoundUp(Value/5)
 //      Bookings           one row per person per DAY, hours spread day by day
-//                         (a 20h week is stored as 8, 8, 4 - not one 20h row)
+//                         (a 20h week is stored as 4, 4, 4, 4, 4 - spread evenly, not one 20h row)
 //
 //  What this data shows: six people across three job levels (sorted by
 //  JobLevelOrder), a half-booked week, a full 40h week, a single-day booking,

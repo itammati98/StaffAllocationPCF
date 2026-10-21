@@ -2,32 +2,53 @@
 
 const EM_DASH = '\u2013';
 
-/** Hours in a period cell: integers stay integers, fractions keep up to two decimals. */
+const GB = 'en-GB';
+
+/** Hours in a period cell: grouped the en-GB way (1,039), fractions keep up to two decimals. */
 export function formatHours(value: number): string {
   if (!isFinite(value) || Math.abs(value) < 0.005) return EM_DASH;
-  const rounded = Math.round(value * 100) / 100;
-  return Number.isInteger(rounded) ? String(rounded) : stripTrailingZeros(rounded.toFixed(2));
+  return value.toLocaleString(GB, { maximumFractionDigits: 2 });
 }
 
-/** Rates and counts: whole numbers, thousands separators dropped for density. */
+/** Rates: grouped the en-GB way (1,039), fractions keep up to two decimals. */
 export function formatRate(value: number): string {
   if (!isFinite(value)) return EM_DASH;
-  const rounded = Math.round(value * 100) / 100;
-  return Number.isInteger(rounded) ? String(rounded) : stripTrailingZeros(rounded.toFixed(2));
+  return value.toLocaleString(GB, { maximumFractionDigits: 2 });
+}
+
+/** Hours in the totals row: whole numbers, grouped the en-GB way. */
+export function formatTotalHours(value: number): string {
+  if (!isFinite(value) || Math.abs(value) < 0.5) return EM_DASH;
+  return Math.round(value).toLocaleString(GB, { maximumFractionDigits: 0 });
 }
 
 /** Fees are shown in thousands to match the canvas app's DisplayThousand column. */
 export function formatThousands(value: number): string {
   if (!isFinite(value) || value === 0) return EM_DASH;
   const thousands = value / 1000;
-  const text = Math.abs(thousands) >= 100 ? String(Math.round(thousands)) : stripTrailingZeros(thousands.toFixed(1));
-  return text;
+  return Math.abs(thousands) >= 100
+    ? Math.round(thousands).toLocaleString(GB, { maximumFractionDigits: 0 })
+    : stripTrailingZeros(thousands.toFixed(1));
+}
+
+/** Fees in the totals row: thousands with exactly one decimal (12.0, 1,039.5). */
+export function formatTotalThousands(value: number): string {
+  if (!isFinite(value) || value === 0) return EM_DASH;
+  return (value / 1000).toLocaleString(GB, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 /** A fraction (0.29) as a whole percentage. */
 export function formatPercent(fraction: number): string {
   if (!isFinite(fraction) || fraction === 0) return EM_DASH;
   return `${Math.round(fraction * 100)}%`;
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** `2026-04-02` as `02 Apr 2026`. */
+export function formatDateKey(dateKey: string): string {
+  const month = Number(dateKey.slice(5, 7));
+  return month >= 1 && month <= 12 ? `${dateKey.slice(8, 10)} ${SHORT_MONTHS[month - 1]} ${dateKey.slice(0, 4)}` : dateKey;
 }
 
 /** Seed text for the inline editor. */

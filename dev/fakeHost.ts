@@ -243,6 +243,7 @@ export function createFakeHost(options: FakeHostOptions): FakeHost {
         readOnly: { raw: host.readOnly, formatted: String(host.readOnly) },
         showNotifications: { raw: host.showNotifications, formatted: String(host.showNotifications) },
         showPricingBadge: { raw: host.showPricingBadge, formatted: String(host.showPricingBadge) },
+        holidays: { raw: JSON.stringify(host.holidays), formatted: '' },
         accentColor: { raw: host.colors.accent },
         backgroundColor: { raw: host.colors.background },
         headerColor: { raw: host.colors.header },

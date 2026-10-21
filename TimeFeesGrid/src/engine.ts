@@ -99,6 +99,20 @@ export function toNumber(value: unknown): number {
   return 0;
 }
 
+/**
+ * ISO-8601 week of a local date: weeks start on Monday and week 1 holds the year's first Thursday,
+ * so 28 Dec 2026 is W53 of 2026 and 4 Jan 2027 is W1 of 2027. `year` is the ISO week-year, which
+ * differs from the calendar year for the days either side of New Year.
+ */
+export function isoWeek(date: Date): { week: number; year: number } {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = target.getUTCDay() === 0 ? 7 : target.getUTCDay();
+  target.setUTCDate(target.getUTCDate() + 4 - dayNumber);
+  const year = target.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(year, 0, 1));
+  return { week: Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7), year };
+}
+
 /** Monday 00:00 local of the week containing `date`. */
 export function startOfWeek(date: Date): Date {
   const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -158,7 +172,9 @@ function bucketKey(day: TimelineDay, phasing: Phasing): string {
     case 'daily':
       return `d:${day.dateKey}`;
     case 'weekly':
-      return `w:${day.yearNum}-${day.weekNum}`;
+      // Keyed by the Monday of the calendar week, not the timeline's WeekNum: a workstream that
+      // starts mid-week still gets Monday-to-Friday columns, and the key never repeats across years.
+      return `w:${toDateKey(startOfWeek(day.date))}`;
     case 'monthly':
       return `m:${day.yearNum}-${day.monthNum}`;
   }
@@ -170,6 +186,7 @@ function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPer
   const firstWorking = workingDays[0] ?? first;
   const lastWorking = workingDays[workingDays.length - 1] ?? days[days.length - 1];
 
+  const iso = isoWeek(first.date);
   let label = '';
   let subLabel = '';
   let title = '';
@@ -177,15 +194,15 @@ function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPer
   if (phasing === 'daily') {
     subLabel = dayMonth(first);
     label = first.value > 0 ? `Day ${first.value}` : subLabel;
-    title = `${WEEKDAY_NAMES[first.weekday - 1]} ${dayMonth(first)} ${first.yearNum}, week ${first.weekNum}`;
+    title = `${WEEKDAY_NAMES[first.weekday - 1]} ${dayMonth(first)} ${first.yearNum}, ISO week ${iso.week}`;
   } else if (phasing === 'weekly') {
-    label = first.weekNum > 0 ? `W${first.weekNum}` : 'Week ?';
+    label = `W${iso.week}`;
     subLabel = dayMonth(firstWorking);
-    title = `Week ${first.weekNum}, ${dayMonth(firstWorking)} - ${dayMonth(lastWorking)} ${lastWorking.yearNum}`;
+    title = `Week ${iso.week} of ${iso.year}, ${dayMonth(firstWorking)} - ${dayMonth(lastWorking)} ${lastWorking.yearNum}, ${workingDays.length} working ${workingDays.length === 1 ? 'day' : 'days'}`;
   } else {
     label = `${SHORT_MONTHS[first.monthNum - 1]} ${String(first.yearNum).slice(2)}`;
     subLabel = `${workingDays.length} days`;
-    title = `${FULL_MONTHS[first.monthNum - 1]} ${first.yearNum}, ${workingDays.length} working days`;
+    title = `${FULL_MONTHS[first.monthNum - 1]} ${first.yearNum}, ${workingDays.length} working ${workingDays.length === 1 ? 'day' : 'days'}`;
   }
 
   return {
@@ -198,9 +215,10 @@ function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPer
     workingDays,
     dateKeys: workingDays.map((day) => day.dateKey),
     capacity: workingDays.length * hoursPerDay,
-    weekNum: first.weekNum,
+    // Weekly columns carry the ISO week and week-year they are labelled with.
+    weekNum: phasing === 'weekly' ? iso.week : first.weekNum,
     monthNum: first.monthNum,
-    yearNum: first.yearNum,
+    yearNum: phasing === 'weekly' ? iso.year : first.yearNum,
   };
 }
 
@@ -233,50 +251,26 @@ export function buildColumns(
 }
 
 /**
- * Spreads `hours` across `workingDayCount` days.
+ * Spreads `hours` evenly across `workingDayCount` days: every day gets `hours / days` rounded down
+ * to two decimals, and whatever that rounding leaves goes to the last day.
  *
  * - `workingDayCount <= 0` -> `[]`
  * - non-positive / non-finite hours -> all zeros
- * - at or below capacity -> front-loaded in `hoursPerDay` chunks: `(20,5,8) -> [8,8,4,0,0]`
- * - above capacity -> as even as possible, with the spare whole hours on the trailing
- *   days and the fractional leftover on the last day: `(41,5,8) -> [8,8,8,8,9]`
+ * - `(20, 5) -> [4, 4, 4, 4, 4]`, `(10, 3) -> [3.33, 3.33, 3.34]`, `(41, 5) -> [8.2, 8.2, 8.2, 8.2, 8.2]`
+ *
+ * `hoursPerDay` is kept for callers; it no longer shapes the spread, it only sets a period's
+ * capacity (and so the over-capacity flag).
  */
-export function distributeHours(hours: number, workingDayCount: number, hoursPerDay: number): number[] {
+export function distributeHours(hours: number, workingDayCount: number, _hoursPerDay?: number): number[] {
   if (workingDayCount <= 0) return [];
-  const count = workingDayCount;
+  const count = Math.floor(workingDayCount);
   if (!Number.isFinite(hours) || hours <= 0) return new Array<number>(count).fill(0);
 
-  const perDay = Number.isFinite(hoursPerDay) && hoursPerDay > 0 ? hoursPerDay : 0;
-  const capacity = count * perDay;
-
-  if (perDay > 0 && hours <= capacity) {
-    const result = new Array<number>(count).fill(0);
-    let remaining = hours;
-    let lastFilled = -1;
-    for (let i = 0; i < count && remaining > 1e-9; i += 1) {
-      const take = Math.min(perDay, remaining);
-      result[i] = round6(take);
-      remaining -= take;
-      lastFilled = i;
-    }
-    if (lastFilled >= 0) {
-      const sum = result.reduce((total, value) => total + value, 0);
-      result[lastFilled] = round6(result[lastFilled] + (hours - sum));
-    }
-    return result;
-  }
-
-  const base = Math.floor(hours / count);
-  const extra = Math.min(count, Math.floor(hours - base * count));
-  const result = new Array<number>(count);
-  let sum = 0;
-  for (let i = 0; i < count; i += 1) {
-    const value = base + (i >= count - extra ? 1 : 0);
-    result[i] = value;
-    sum += value;
-  }
-  result[count - 1] = round6(result[count - 1] + (hours - sum));
-  return result.map((value) => round6(value));
+  // A tiny epsilon keeps 20 / 5 = 3.9999999 from rounding down to 3.99.
+  const base = Math.floor((hours / count) * 100 + 1e-7) / 100;
+  const result = new Array<number>(count).fill(base);
+  result[count - 1] = round6(hours - base * (count - 1));
+  return result;
 }
 
 /** Store key for one person / one day. */
@@ -424,6 +418,7 @@ export function computeModel(
 
     let totalHours = 0;
     let outsideWindowHours = 0;
+    const outsideWindow: { dateKey: string; hours: number }[] = [];
     const entries = byPerson.get(person.key);
     if (entries) {
       for (const [dateKey, dayHours] of entries) {
@@ -433,6 +428,7 @@ export function computeModel(
           totalHours += dayHours;
         } else {
           outsideWindowHours += dayHours;
+          outsideWindow.push({ dateKey, hours: round6(dayHours) });
         }
       }
     }
@@ -453,6 +449,7 @@ export function computeModel(
       gm,
       realisation,
       outsideWindowHours: round6(outsideWindowHours),
+      outsideWindow: outsideWindow.sort((left, right) => (left.dateKey < right.dateKey ? -1 : left.dateKey > right.dateKey ? 1 : 0)),
     });
   }
 

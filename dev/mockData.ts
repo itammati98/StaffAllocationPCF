@@ -111,9 +111,9 @@ const dailyColumns = buildColumns(mockTimeline, 'daily', HOURS_PER_DAY);
 function buildMockStore(): AllocationStore {
   let store = createStore([]);
 
-  // Alice: a 45h week (over the 40h capacity), spread evenly as integers.
+  // Alice: a 45h week (over the 40h capacity), spread evenly.
   store = setColumnHours(store, weeklyColumns[0], 'person-alice', 45, HOURS_PER_DAY);
-  // Bob: a 20h week, front-loaded onto the first three days.
+  // Bob: a 20h week, spread evenly over its five working days.
   store = setColumnHours(store, weeklyColumns[1], 'person-bob', 20, HOURS_PER_DAY);
   // Carol: a single 20h day in the middle of the window.
   store = setColumnHours(store, dailyColumns[10], 'person-carol', 20, HOURS_PER_DAY);
@@ -152,5 +152,6 @@ export const mockHostInputs: GridHostInputs = {
   readOnly: false,
   showNotifications: true,
   showPricingBadge: true,
+  holidays: [],
   colors: DEFAULT_COLORS,
 };

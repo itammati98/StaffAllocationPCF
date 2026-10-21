@@ -36,7 +36,7 @@ function timeline(): TimelineDay[] {
 describe('period columns', () => {
   it('books hours on working days only and keeps the weekend inside its week', () => {
     const weekly = buildColumns(timeline(), 'weekly', HOURS_PER_DAY);
-    expect(weekly.map((column) => column.id)).toEqual(['w:2026-1', 'w:2026-2']);
+    expect(weekly.map((column) => column.id)).toEqual(['w:2026-01-05', 'w:2026-01-12']);
     expect(weekly[0].dateKeys).toEqual(['2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09']);
     expect(weekly[0].days).toHaveLength(7);
     expect(weekly[0].capacity).toBe(5 * HOURS_PER_DAY);

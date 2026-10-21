@@ -7,7 +7,7 @@
     with colAllocatedHours as the editable bookings. The three collections are bound as datasets;
     the component publishes every change back to the app through the Changes / ChangesJson outputs.
   -->
-  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.6.2"
+  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.7.0"
            display-name-key="TimeFeesGrid_Display" description-key="TimeFeesGrid_Desc"
            control-type="virtual">
 
@@ -64,6 +64,9 @@
               of-type="Whole.None" usage="input" default-value="6" />
     <property name="hoursPerDay" display-name-key="HoursPerDay_Display" description-key="HoursPerDay_Desc"
               of-type="Decimal" usage="input" default-value="8" />
+    <!-- Optional public holidays: a JSON list of dates (or JSON(colHolidays)); never working days -->
+    <property name="holidays" display-name-key="Holidays_Display" description-key="Holidays_Desc"
+              of-type="Multiple" usage="input" />
 
     <!-- View options -->
     <property name="phasing" display-name-key="Phasing_Display" description-key="Phasing_Desc"

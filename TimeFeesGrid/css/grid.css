@@ -54,6 +54,9 @@
 /* ---------------------------------------------------------------- toolbar */
 
 .tfg-toolbar {
+  /* Above the grid's sticky cells, so the info tooltip can open over the timeline. */
+  position: relative;
+  z-index: 20;
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
@@ -203,6 +206,15 @@
   filter: brightness(0.92);
 }
 
+.tfg-btn--add {
+  /* Matches the canvas app's own buttons: Segoe UI 14 semibold. */
+  height: 32px;
+  padding: 0 14px;
+  font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .tfg-btn--small {
   height: 22px;
   padding: 0 8px;
@@ -255,6 +267,86 @@
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+}
+
+.tfg-chip--warning {
+  gap: 4px;
+  background: var(--tfg-warn-bg);
+  color: var(--tfg-warn-text);
+}
+
+.tfg-chip--button {
+  appearance: none;
+  border: 1px solid transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tfg-chip--button:hover {
+  border-color: currentColor;
+}
+
+.tfg-chip--button[aria-pressed="true"] {
+  border-color: currentColor;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.tfg-chip--button:focus-visible,
+.tfg-info__btn:focus-visible {
+  outline: 2px solid var(--tfg-accent);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------- info tip */
+
+.tfg-info {
+  position: relative;
+  display: inline-flex;
+}
+
+.tfg-info__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tfg-text-muted);
+  cursor: help;
+}
+
+.tfg-info__btn:hover {
+  color: var(--tfg-accent);
+}
+
+.tfg-info__tip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -8px;
+  width: max-content;
+  max-width: min(380px, 80vw);
+  padding: 8px 10px;
+  border: 1px solid var(--tfg-border-strong);
+  border-radius: var(--tfg-radius);
+  background: var(--tfg-bg);
+  color: var(--tfg-text);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.tfg-info:hover .tfg-info__tip,
+.tfg-info:focus-within .tfg-info__tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .tfg-sr {
@@ -539,6 +631,18 @@
   box-shadow: inset 0 0 0 1px var(--tfg-accent);
 }
 
+/* The Hours cell of a person the outside-the-window chip filtered to. It sits in a pinned column,
+   so it outranks the pinned fills above. */
+.tfg-table tbody tr td.tfg-td[data-outside] {
+  background: var(--tfg-warn-bg);
+  color: var(--tfg-warn-text);
+  font-weight: 600;
+}
+
+.tfg-table tbody tr td.tfg-td[data-active][data-outside] {
+  background: var(--tfg-warn-strong);
+}
+
 /* ---------------------------------------------------------- identity cell */
 
 .tfg-identity {
@@ -590,7 +694,6 @@
 .tfg-identity__name--totals {
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  font-size: 10.5px;
 }
 
 .tfg-identity__meta {
@@ -687,7 +790,9 @@
   border-top: 1px solid var(--tfg-border-strong);
   border-right: 1px solid var(--tfg-border);
   font-weight: 700;
-  font-size: 11.5px;
+  /* Same size as the body cells (the table sets 12px, 11px when narrow). */
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
   color: var(--tfg-text);
   white-space: nowrap;
   vertical-align: middle;
@@ -705,31 +810,6 @@
 
 .tfg-tf--identity .tfg-identity__text {
   line-height: 1.2;
-}
-
-/* ------------------------------------------------------------------- hint */
-
-.tfg-hint {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 12px;
-  padding: 4px 10px;
-  border-top: 1px solid var(--tfg-border);
-  background: var(--tfg-bg-subtle);
-  color: var(--tfg-text-muted);
-  font-size: 10.5px;
-}
-
-.tfg-hint b {
-  font-weight: 700;
-  color: var(--tfg-text);
-}
-
-.tfg-root[data-density="narrow"] .tfg-hint__legend {
-  display: none;
 }
 
 /* On a phone-width screen the person cell gives its room to the name. */

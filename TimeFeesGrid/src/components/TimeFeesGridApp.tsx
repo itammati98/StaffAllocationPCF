@@ -32,6 +32,7 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
   const [people, setPeople] = React.useState<PersonRow[]>(() => [...snapshot.people]);
   const [store, setStore] = React.useState<AllocationStore>(() => createStore(snapshot.allocations));
   const [phasing, setPhasing] = React.useState<Phasing>(host.phasing);
+  const [outsideFilter, setOutsideFilter] = React.useState(false);
 
   const { message, show } = useTransientMessage();
   const revision = React.useRef(0);
@@ -47,6 +48,25 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
   );
   const model = React.useMemo(() => computeModel(peopleInOrder, store, columns), [peopleInOrder, store, columns]);
   const layout = React.useMemo(() => buildColumnLayout(columns, density), [columns, density]);
+  // The outside-the-window chip narrows the grid to the people who have such hours; the filter
+  // lapses by itself once nobody has any.
+  const filterOn = outsideFilter && model.outsideWindowHours > 0;
+  const shownModel = React.useMemo(
+    () =>
+      filterOn
+        ? computeModel(
+            peopleInOrder.filter((_, index) => model.rows[index].outsideWindowHours > 0),
+            store,
+            columns,
+          )
+        : model,
+    [filterOn, model, peopleInOrder, store, columns],
+  );
+  const holidayCount = React.useMemo(() => {
+    if (host.holidays.length === 0) return 0;
+    const holidays = new Set(host.holidays);
+    return snapshot.timeline.filter((day) => day.weekday <= 5 && holidays.has(day.dateKey)).length;
+  }, [host.holidays, snapshot.timeline]);
   const readOnly = host.readOnly;
 
   /** Hands the current state to the host; the host reads it back through `getOutputs`. */
@@ -167,6 +187,9 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
         periodCount={columns.length}
         hoursTotal={totalHours}
         outsideWindowHours={model.outsideWindowHours}
+        outsideFilterOn={filterOn}
+        holidayCount={holidayCount}
+        onToggleOutsideFilter={() => setOutsideFilter(!filterOn)}
         onPhasingChange={setPhasing}
         onAddStaff={handleRequestAddStaff}
       />
@@ -195,10 +218,11 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
       ) : (
         <Grid
           layout={layout}
-          model={model}
+          model={shownModel}
           density={density}
           readOnly={readOnly}
           pricingMethod={host.pricingMethod}
+          highlightOutside={filterOn}
           onSetHours={handleSetHours}
           onSetRate={handleSetRate}
           onFillRight={handleFillRight}
@@ -206,14 +230,6 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
           onNotice={handleNotice}
         />
       )}
-
-      <div className="tfg-hint">
-        <span>
-          <b>Arrow keys</b> move and apply the value being typed &middot; <b>Enter</b> or type to edit &middot; <b>Esc</b> cancels &middot;{' '}
-          <b>Tab</b> commits and moves on &middot; <b>Del</b> clears
-        </span>
-        <span className="tfg-hint__legend">Hours spread over the working days of each period. Fee = hours &times; RPH. GM% is margin on cost.</span>
-      </div>
     </div>
   );
 }
