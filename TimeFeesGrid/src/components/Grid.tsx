@@ -5,10 +5,12 @@ import {
   formatDateKey,
   formatEditableNumber,
   formatHours,
+  formatOneDecimal,
   formatPercent,
   formatRate,
   formatThousands,
   formatTotalHours,
+  formatTotalPercent,
   formatTotalThousands,
   initials,
   parseEditableNumber,
@@ -571,21 +573,19 @@ export function Grid(props: GridProps): React.ReactElement {
           <span className="tfg-identity">
             <span className="tfg-identity__text">
               <span className="tfg-identity__name tfg-identity__name--totals">Totals</span>
-              <span className="tfg-identity__meta">
-                {rows.length} {rows.length === 1 ? 'person' : 'people'}
-              </span>
             </span>
           </span>
         );
         break;
+      // Every figure in the totals row has one decimal place, like the app's summary card.
       case 'rph':
-        content = formatRate(totals.avgRph);
+        content = formatOneDecimal(totals.avgRph);
         break;
       case 'std':
-        content = formatRate(totals.avgStd);
+        content = formatOneDecimal(totals.avgStd);
         break;
       case 'real':
-        content = formatPercent(totals.avgRealisation);
+        content = formatTotalPercent(totals.avgRealisation);
         break;
       case 'period': {
         // The totals row sums a column across everyone, so it is never compared with one person's
@@ -609,7 +609,7 @@ export function Grid(props: GridProps): React.ReactElement {
         content = formatTotalThousands(totals.fee);
         break;
       case 'gm':
-        content = formatPercent(totals.gm);
+        content = formatTotalPercent(totals.gm);
         break;
       default:
         content = null;
@@ -630,7 +630,7 @@ export function Grid(props: GridProps): React.ReactElement {
   // An empty grid keeps the header and totals out of the table model, so assistive technology never
   // sees a row count that disagrees with the rows on screen.
   if (rows.length === 0) {
-    return <div className="tfg-placeholder">No people added yet &ndash; use Add staff to book hours.</div>;
+    return <div className="tfg-empty">No people added yet - use Add staff to book hours.</div>;
   }
 
   // Fixed column widths give the row its minimum size; the flexible spacer column takes whatever is

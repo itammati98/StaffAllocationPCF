@@ -16,10 +16,24 @@ export function formatRate(value: number): string {
   return value.toLocaleString(GB, { maximumFractionDigits: 2 });
 }
 
-/** Hours in the totals row: whole numbers, grouped the en-GB way. */
+/**
+ * Totals row values: always one decimal place, grouped the en-GB way (1,039.0), the way the app's
+ * OneDecimalPlace formats its summary figures.
+ */
+export function formatOneDecimal(value: number): string {
+  if (!isFinite(value) || Math.abs(value) < 0.05) return EM_DASH;
+  return value.toLocaleString(GB, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+/** Hours in the totals row: one decimal place. */
 export function formatTotalHours(value: number): string {
-  if (!isFinite(value) || Math.abs(value) < 0.5) return EM_DASH;
-  return Math.round(value).toLocaleString(GB, { maximumFractionDigits: 0 });
+  return formatOneDecimal(value);
+}
+
+/** A fraction in the totals row as a percentage with one decimal place (95.3%), like the app's Percentage. */
+export function formatTotalPercent(fraction: number): string {
+  if (!isFinite(fraction) || fraction === 0) return EM_DASH;
+  return `${(fraction * 100).toLocaleString(GB, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
 /** Fees are shown in thousands to match the canvas app's DisplayThousand column. */

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Density } from '../gridColumns';
 import { formatHours } from '../format';
 import { Phasing, PricingMethod } from '../types';
 
@@ -17,16 +16,12 @@ export const PRICING_LABELS: Record<PricingMethod, string> = {
 const PHASINGS: readonly Phasing[] = ['daily', 'weekly', 'monthly'];
 
 interface ToolbarProps {
-  density: Density;
   phasing: Phasing;
   /** Shown as a read-only chip: the app owns the pricing mode. */
   pricingMethod: PricingMethod;
   /** False hides the pricing chip; the app can set the mode without labelling it. */
   showPricingBadge: boolean;
   readOnly: boolean;
-  peopleCount: number;
-  periodCount: number;
-  hoursTotal: number;
   /** Hours booked by these people outside the workstream window; shown as a warning chip. */
   outsideWindowHours: number;
   /** True while the grid shows only the people with hours outside the window. */
@@ -40,8 +35,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar(props: ToolbarProps): React.ReactElement {
-    const { density, phasing, pricingMethod, showPricingBadge, readOnly, peopleCount, periodCount, hoursTotal, outsideWindowHours, outsideFilterOn, holidayCount } =
-    props;
+    const { phasing, pricingMethod, showPricingBadge, readOnly, outsideWindowHours, outsideFilterOn, holidayCount } = props;
   const buttons = React.useRef<(HTMLButtonElement | null)[]>([]);
 
   /** Arrow keys move between the phasing buttons, as expected of a radio group. */
@@ -58,72 +52,68 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
 
   return (
     <div className="tfg-toolbar">
-      <span className="tfg-toolbar__titles">
-        <span className="tfg-title">Time &amp; fees</span>
-        {density !== 'narrow' ? (
-          <span className="tfg-subtitle">
-            {peopleCount} {peopleCount === 1 ? 'person' : 'people'} &middot; {periodCount} {periodCount === 1 ? 'period' : 'periods'} &middot;{' '}
-            {hoursTotal > 0 ? `${formatHours(hoursTotal)}h booked` : 'no hours booked yet'}
+      <span className="tfg-title">Time Fees</span>
+
+      {/* Only this group wraps on a narrow screen, so the title stays on the left and Add staff on
+          the right of the first line, where the app keeps its own card buttons. */}
+      <div className="tfg-toolbar__group">
+        <div className="tfg-segmented" role="radiogroup" aria-label="Timeline phasing" onKeyDown={onPhasingKeyDown}>
+          {PHASINGS.map((option, index) => (
+            <button
+              key={option}
+              ref={(element) => {
+                buttons.current[index] = element;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={phasing === option}
+              tabIndex={phasing === option ? 0 : -1}
+              className="tfg-seg"
+              title={`Group the timeline by ${PHASING_LABELS[option].toLowerCase()} periods`}
+              onClick={() => props.onPhasingChange(option)}
+            >
+              {PHASING_LABELS[option]}
+            </button>
+          ))}
+        </div>
+
+        <InfoTip lines={infoLines(phasing, holidayCount)} />
+
+        {outsideWindowHours > 0 ? (
+          <button
+            type="button"
+            className="tfg-chip tfg-chip--warning tfg-chip--button"
+            aria-pressed={outsideFilterOn}
+            onClick={props.onToggleOutsideFilter}
+            title={
+              outsideFilterOn
+                ? 'Showing only the people with hours outside the workstream window. Click to show everyone.'
+                : 'Hours booked outside the workstream window are kept untouched. Click to show only the people who have them.'
+            }
+          >
+            <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" focusable="false">
+              <path d="M8 1.5 15 14H1L8 1.5zm-.75 4.5v4h1.5V6h-1.5zm0 5v1.5h1.5V11h-1.5z" fill="currentColor" />
+            </svg>
+            {formatHours(outsideWindowHours)}h outside the window
+            {outsideFilterOn ? <span aria-hidden="true">&nbsp;&times;</span> : null}
+          </button>
+        ) : null}
+
+        {showPricingBadge ? (
+          <span
+            className="tfg-chip tfg-chip--info"
+            title={`Pricing is set by the app: ${PRICING_LABELS[pricingMethod]} ${
+              pricingMethod === 'manualRate' ? 'lets you type RPH, and derives the realisation' : 'lets you type the realisation, and derives RPH'
+            }`}
+          >
+            {PRICING_LABELS[pricingMethod]}
           </span>
         ) : null}
-      </span>
 
-      <div className="tfg-segmented" role="radiogroup" aria-label="Timeline phasing" onKeyDown={onPhasingKeyDown}>
-        {PHASINGS.map((option, index) => (
-          <button
-            key={option}
-            ref={(element) => {
-              buttons.current[index] = element;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={phasing === option}
-            tabIndex={phasing === option ? 0 : -1}
-            className="tfg-seg"
-            title={`Group the timeline by ${PHASING_LABELS[option].toLowerCase()} periods`}
-            onClick={() => props.onPhasingChange(option)}
-          >
-            {PHASING_LABELS[option]}
-          </button>
-        ))}
+        <span className="tfg-toolbar__spacer" />
+
+        {readOnly ? <span className="tfg-chip" title="The app is in view mode; hours cannot be edited">View only</span> : null}
       </div>
-
-      <InfoTip lines={infoLines(phasing, holidayCount)} />
-
-      {outsideWindowHours > 0 ? (
-        <button
-          type="button"
-          className="tfg-chip tfg-chip--warning tfg-chip--button"
-          aria-pressed={outsideFilterOn}
-          onClick={props.onToggleOutsideFilter}
-          title={
-            outsideFilterOn
-              ? 'Showing only the people with hours outside the workstream window. Click to show everyone.'
-              : 'Hours booked outside the workstream window are kept untouched. Click to show only the people who have them.'
-          }
-        >
-          <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" focusable="false">
-            <path d="M8 1.5 15 14H1L8 1.5zm-.75 4.5v4h1.5V6h-1.5zm0 5v1.5h1.5V11h-1.5z" fill="currentColor" />
-          </svg>
-          {formatHours(outsideWindowHours)}h outside the window
-          {outsideFilterOn ? <span aria-hidden="true">&nbsp;&times;</span> : null}
-        </button>
-      ) : null}
-
-      {showPricingBadge ? (
-        <span
-          className="tfg-chip tfg-chip--info"
-          title={`Pricing is set by the app: ${PRICING_LABELS[pricingMethod]} ${
-            pricingMethod === 'manualRate' ? 'lets you type RPH, and derives the realisation' : 'lets you type the realisation, and derives RPH'
-          }`}
-        >
-          {PRICING_LABELS[pricingMethod]}
-        </span>
-      ) : null}
-
-      <span className="tfg-toolbar__spacer" />
-
-      {readOnly ? <span className="tfg-chip" title="The app is in view mode; hours cannot be edited">View only</span> : null}
 
       <button
         type="button"
@@ -132,8 +122,8 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
         onClick={props.onAddStaff}
         title="Ask the app to add a person to this workstream"
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path d="M8 2a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2H9v4a1 1 0 1 1-2 0V9H3a1 1 0 1 1 0-2h4V3a1 1 0 0 1 1-1z" fill="currentColor" />
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <path d="M8 2.5a.5.5 0 0 0-1 0V7H2.5a.5.5 0 0 0 0 1H7v4.5a.5.5 0 0 0 1 0V8h4.5a.5.5 0 0 0 0-1H8V2.5z" fill="currentColor" />
         </svg>
         Add staff
       </button>

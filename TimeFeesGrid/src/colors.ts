@@ -47,7 +47,7 @@ export interface GridColors {
   mutedText: string;
   /** Row fill under the pointer. */
   hover: string;
-  /** Toolbar, help panel and hint strip background. */
+  /** Subtle fill behind hovered buttons and segments. */
   subtleBackground: string;
   /** Destructive affordances: the row remove button and the error banner. */
   danger: string;

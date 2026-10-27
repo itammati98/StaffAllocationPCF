@@ -172,20 +172,15 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
   const handleNotice = (notice: GridNotice): void => show(notice);
 
   const warnings = host.showNotifications ? snapshot.warnings : [];
-  const totalHours = model.totals.hoursTotal;
   const palette = React.useMemo(() => colorVars(host.colors) as React.CSSProperties, [host.colors]);
 
   return (
     <div className="tfg-root" ref={rootRef} style={palette} data-density={density} data-readonly={readOnly ? 'true' : undefined}>
       <Toolbar
-        density={density}
         phasing={phasing}
         pricingMethod={host.pricingMethod}
         showPricingBadge={host.showPricingBadge}
         readOnly={readOnly}
-        peopleCount={people.length}
-        periodCount={columns.length}
-        hoursTotal={totalHours}
         outsideWindowHours={model.outsideWindowHours}
         outsideFilterOn={filterOn}
         holidayCount={holidayCount}

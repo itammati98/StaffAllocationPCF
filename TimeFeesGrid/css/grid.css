@@ -59,34 +59,42 @@
   z-index: 20;
   display: flex;
   flex: 0 0 auto;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 6px 10px;
-  background: var(--tfg-bg-subtle);
+  /* The same header bar as the app's other cards (Other Fees): a 32px row with 12px side padding
+     over a 1px rule; 3px + 26px controls + 3px. */
+  min-height: 33px;
+  padding: 3px 12px;
+  background: var(--tfg-bg);
   border-bottom: 1px solid var(--tfg-border);
 }
 
-.tfg-toolbar__titles {
-  display: flex;
-  flex-direction: column;
-  margin-right: 4px;
-  min-width: 0;
-}
-
+/* Card title, styled like the app's "OTHER FEES" header: 10px bold uppercase, 0.5px tracking,
+   4px in from the bar's padding. */
 .tfg-title {
-  font-size: 13px;
-  font-weight: 600;
+  flex: 0 0 auto;
+  margin-left: 4px;
+  line-height: 26px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   color: var(--tfg-text);
   white-space: nowrap;
 }
 
-.tfg-subtitle {
-  font-size: 10.5px;
-  color: var(--tfg-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.tfg-toolbar__group {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 8px;
+  min-width: 0;
+  min-height: 26px;
+}
+
+.tfg-btn--add {
+  flex: 0 0 auto;
 }
 
 .tfg-toolbar__spacer {
@@ -96,6 +104,7 @@
 .tfg-segmented {
   display: inline-flex;
   align-items: center;
+  height: 26px;
   padding: 2px;
   border: 1px solid var(--tfg-border-strong);
   border-radius: var(--tfg-radius);
@@ -207,12 +216,29 @@
 }
 
 .tfg-btn--add {
-  /* Matches the canvas app's own buttons: Segoe UI 14 semibold. */
-  height: 32px;
-  padding: 0 14px;
+  /* Matches the app's modern ButtonCanvas (Add Other Fee): primary, 130 x 26, font size 12
+     semibold, 4px corners, a 16px Add icon centred with the label. */
+  justify-content: center;
+  width: 130px;
+  height: 26px;
+  padding: 0 8px;
+  gap: 4px;
+  border-radius: 4px;
   font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
+}
+
+.tfg-btn--add:active:not(:disabled) {
+  filter: brightness(0.8);
+}
+
+/* Fluent's disabled button rather than a faded primary one. */
+.tfg-btn--add:disabled {
+  opacity: 1;
+  background: #f0f0f0;
+  border-color: #e0e0e0;
+  color: #bdbdbd;
 }
 
 .tfg-btn--small {
@@ -401,6 +427,18 @@
 .tfg-banner--error {
   background: var(--tfg-danger-soft);
   color: var(--tfg-danger);
+}
+
+/* No people yet: the same italic row as the app's "No other fees yet". */
+.tfg-empty {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 34px;
+  font-size: 10px;
+  font-style: italic;
+  color: #a19f9d;
 }
 
 .tfg-placeholder {

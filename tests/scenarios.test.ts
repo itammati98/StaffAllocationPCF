@@ -17,7 +17,15 @@ import {
   storeHours,
 } from '../TimeFeesGrid/src/engine';
 import { parseHolidays, readSnapshot } from '../TimeFeesGrid/src/datasetAdapter';
-import { formatHours, formatRate, formatThousands, formatTotalHours, formatTotalThousands } from '../TimeFeesGrid/src/format';
+import {
+  formatHours,
+  formatOneDecimal,
+  formatRate,
+  formatThousands,
+  formatTotalHours,
+  formatTotalPercent,
+  formatTotalThousands,
+} from '../TimeFeesGrid/src/format';
 import { DEFAULT_COLORS } from '../TimeFeesGrid/src/colors';
 import type { GridHostInputs, PersonRow } from '../TimeFeesGrid/src/types';
 
@@ -161,9 +169,12 @@ describe('number formats', () => {
     expect(formatThousands(1_039_000)).toBe('1,039');
   });
 
-  it('shows the totals row with whole hours and fees to one decimal', () => {
-    expect(formatTotalHours(39.6)).toBe('40');
-    expect(formatTotalHours(1039.4)).toBe('1,039');
+  it('shows every totals figure with one decimal place, like the app', () => {
+    expect(formatTotalHours(40)).toBe('40.0');
+    expect(formatTotalHours(1039.44)).toBe('1,039.4');
+    expect(formatOneDecimal(149.62)).toBe('149.6');
+    expect(formatTotalPercent(0.9534)).toBe('95.3%');
+    expect(formatTotalPercent(1)).toBe('100.0%');
     expect(formatTotalThousands(12_000)).toBe('12.0');
     expect(formatTotalThousands(1_039_460)).toBe('1,039.5');
     expect(formatTotalThousands(0)).toBe('–');
