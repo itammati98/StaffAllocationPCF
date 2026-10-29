@@ -154,3 +154,38 @@ describe('component / paged host', () => {
     expect(complete.props.snapshot.allocations).toHaveLength(mockAllocations.length + 1);
   });
 });
+
+describe('component / required height', () => {
+  it('publishes the height the grid needs as "heightChanged", once per new value, keeping the data', () => {
+    const { component, host, notified } = setup();
+    const mounted = view(component, host);
+
+    // Before any edit the payload is an empty heightChanged one, so OnChange has nothing to apply.
+    mounted.onHeight?.(353);
+    expect(notified.count).toBe(1);
+    expect(component.getOutputs().requiredHeight).toBe(353);
+    expect(component.getOutputs().changes).toMatchObject({ action: 'heightChanged', allocations: [], people: [] });
+
+    // The same height again publishes nothing.
+    mounted.onHeight?.(353);
+    expect(notified.count).toBe(1);
+
+    // An edit the host has not read yet keeps its action when the height changes with it: the host
+    // may read both notifications at once, and the edit must still reach OnChange.
+    const payload = buildOutput(createStore(mockAllocations), mockPeople, mockTimeline);
+    mounted.onChange({ revision: 1, action: 'addStaffRequested', personName: '', allocations: payload.allocations, people: payload.people });
+    mounted.onHeight?.(373);
+    expect(notified.count).toBe(3);
+    expect(component.getOutputs().changes).toMatchObject({ action: 'addStaffRequested', revision: 1 });
+    expect(component.getOutputs().requiredHeight).toBe(373);
+
+    // Once the host has read it, a later height change no longer repeats the action.
+    mounted.onHeight?.(393);
+    expect(notified.count).toBe(4);
+    const changes = component.getOutputs().changes as GridOutput;
+    expect(changes.action).toBe('heightChanged');
+    expect(changes.revision).toBe(1);
+    expect(changes.allocations).toEqual(payload.allocations);
+    expect(component.getOutputs().requiredHeight).toBe(393);
+  });
+});

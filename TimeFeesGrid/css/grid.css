@@ -390,15 +390,23 @@
 /* --------------------------------------------------------- status & notes */
 
 .tfg-status {
+  /* Floats under the toolbar's right end, over the column headers, so showing it never changes the
+     control's height. Clicks go through to the grid. */
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 12px;
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
   gap: 10px;
+  max-width: min(520px, calc(100% - 24px));
   padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: var(--tfg-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   font-size: 11.5px;
-  border-bottom: 1px solid var(--tfg-border);
-  background: var(--tfg-accent-soft);
+  background: var(--tfg-bg);
   color: var(--tfg-accent);
+  pointer-events: none;
 }
 
 .tfg-status--warning {
@@ -759,6 +767,62 @@
 .tfg-rowactions:focus-within {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ------------------------------------------------------------ Fill column */
+
+/* The Fill arrows sit between the rates and the timeline, so it is clear they populate the
+   periods to their right. */
+.tfg-td--fill,
+.tfg-th--fill,
+.tfg-tf--fill {
+  padding: 0;
+  text-align: center;
+}
+
+.tfg-fillbtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--tfg-radius);
+  background: transparent;
+  color: var(--tfg-accent);
+  cursor: pointer;
+}
+
+.tfg-fillbtn:hover:not(:disabled) {
+  background: var(--tfg-accent-soft);
+  border-color: var(--tfg-accent);
+}
+
+.tfg-fillbtn:focus-visible {
+  outline: 2px solid var(--tfg-accent);
+  outline-offset: 1px;
+}
+
+.tfg-fillbtn:disabled {
+  color: var(--tfg-text-soft);
+  cursor: default;
+}
+
+/* ------------------------------------------------------------- selection */
+
+/* Dragging selects cells, not text. */
+.tfg-table {
+  user-select: none;
+}
+
+/* A selected block (Shift+arrows, Shift+click or a drag): copy, cut, paste and Delete act on it.
+   The fill is the opaque active-cell tint, so pinned columns never show the timeline through. */
+.tfg-table tbody tr td.tfg-td[data-selected] {
+  background: var(--tfg-active-cell);
+  box-shadow: inset 0 0 0 1px var(--tfg-accent-soft);
 }
 
 /* ---------------------------------------------------------------- editor */

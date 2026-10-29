@@ -10,7 +10,7 @@ import { PeriodColumn } from './types';
 
 export type Density = 'comfortable' | 'compact' | 'narrow';
 
-export type CellKind = 'identity' | 'rph' | 'std' | 'real' | 'period' | 'spacer' | 'totalHours' | 'fee' | 'gm';
+export type CellKind = 'identity' | 'rph' | 'std' | 'real' | 'fill' | 'period' | 'spacer' | 'totalHours' | 'fee' | 'gm';
 
 export interface ColumnLayout {
   kind: CellKind;
@@ -23,7 +23,7 @@ export interface ColumnLayout {
   subLabel: string;
   /** Tooltip and accessible description. */
   title: string;
-  align: 'start' | 'end';
+  align: 'start' | 'center' | 'end';
   /** Period columns only. */
   period?: PeriodColumn;
   /** Distance from the left edge of the row; set only for sticky-left columns. */
@@ -51,24 +51,24 @@ export const DENSITY: Record<Density, DensitySpec> = {
     rowHeight: 40,
     headerHeight: 34,
     footerHeight: 34,
-    widths: { identity: 264, rph: 76, std: 76, real: 76, period: 72, totalHours: 84, fee: 84, gm: 76 },
-    stickyLeft: ['identity', 'rph', 'std', 'real'],
+    widths: { identity: 264, rph: 76, std: 76, real: 76, fill: 40, period: 72, totalHours: 84, fee: 84, gm: 76 },
+    stickyLeft: ['identity', 'rph', 'std', 'real', 'fill'],
     stickyRight: ['totalHours', 'fee', 'gm'],
   },
   compact: {
     rowHeight: 36,
     headerHeight: 32,
     footerHeight: 32,
-    widths: { identity: 216, rph: 64, std: 64, real: 64, period: 60, totalHours: 72, fee: 72, gm: 72 },
-    stickyLeft: ['identity', 'rph', 'std', 'real'],
+    widths: { identity: 216, rph: 64, std: 64, real: 64, fill: 36, period: 60, totalHours: 72, fee: 72, gm: 72 },
+    stickyLeft: ['identity', 'rph', 'std', 'real', 'fill'],
     stickyRight: ['totalHours', 'fee'],
   },
   narrow: {
     rowHeight: 34,
     headerHeight: 30,
     footerHeight: 30,
-    widths: { identity: 148, rph: 56, std: 56, real: 56, period: 56, totalHours: 64, fee: 64, gm: 64 },
-    stickyLeft: ['identity', 'rph'],
+    widths: { identity: 148, rph: 56, std: 56, real: 56, fill: 32, period: 56, totalHours: 64, fee: 64, gm: 64 },
+    stickyLeft: ['identity', 'rph', 'fill'],
     stickyRight: [],
   },
 };
@@ -80,12 +80,16 @@ export function densityForWidth(width: number): Density {
 }
 
 /**
- * Builds the visible column list for one density.
+ * Builds the visible column list for one density. `fill: false` leaves out the Fill column.
  * A period that holds no working day at all (weekend days arriving from a bound timeline) is
  * dropped: it can never hold hours. A single flexible column sits between the timeline and the
  * totals, so the row totals stay at the right edge of the grid however few periods there are.
  */
-export function buildColumnLayout(periods: readonly PeriodColumn[], density: Density): ColumnLayout[] {
+export function buildColumnLayout(
+  periods: readonly PeriodColumn[],
+  density: Density,
+  options: { fill?: boolean } = {},
+): ColumnLayout[] {
   const spec = DENSITY[density];
   const columns: ColumnLayout[] = [];
 
@@ -96,7 +100,7 @@ export function buildColumnLayout(periods: readonly PeriodColumn[], density: Den
       label: FIXED_COLUMNS[kind].label,
       subLabel: '',
       title: FIXED_COLUMNS[kind].title,
-      align: kind === 'identity' ? 'start' : 'end',
+      align: kind === 'identity' ? 'start' : kind === 'fill' ? 'center' : 'end',
     });
   };
 
@@ -106,6 +110,8 @@ export function buildColumnLayout(periods: readonly PeriodColumn[], density: Den
     addFixed('std');
     addFixed('real');
   }
+  // The Fill arrows sit between the rates and the timeline they populate; a read-only grid has none.
+  if (options.fill !== false) addFixed('fill');
 
   periods.forEach((period) => {
     // A period that holds no working day (weekends arriving from a bound timeline) can never take hours.
@@ -169,6 +175,7 @@ const FIXED_COLUMNS: Record<Exclude<CellKind, 'period' | 'spacer'>, { label: str
   rph: { label: 'RPH', title: 'Rate per hour charged for this person, used for the time fees' },
   std: { label: 'STD', title: 'Standard rate (fee rate) for this person' },
   real: { label: 'REAL%', title: 'Realisation: RPH as a percentage of the standard rate' },
+  fill: { label: 'Fill', title: 'Fill the row: copy the first period that has hours into every following period' },
   totalHours: { label: 'Hours', title: 'Hours booked in this workstream window' },
   fee: { label: 'Fee (k)', title: 'Time fees in thousands: booked hours times RPH' },
   gm: { label: 'GM%', title: 'Gross margin on cost: (time fees - cost) / cost' },

@@ -167,6 +167,11 @@ function dayMonth(day: TimelineDay): string {
   return `${pad2(day.date.getDate())} ${SHORT_MONTHS[day.date.getMonth()]}`;
 }
 
+/** `YYYY-MM-DD` of the Monday of the calendar week holding `day`. */
+function mondayKey(day: TimelineDay): string {
+  return toDateKey(startOfWeek(day.date));
+}
+
 function bucketKey(day: TimelineDay, phasing: Phasing): string {
   switch (phasing) {
     case 'daily':
@@ -174,19 +179,23 @@ function bucketKey(day: TimelineDay, phasing: Phasing): string {
     case 'weekly':
       // Keyed by the Monday of the calendar week, not the timeline's WeekNum: a workstream that
       // starts mid-week still gets Monday-to-Friday columns, and the key never repeats across years.
-      return `w:${toDateKey(startOfWeek(day.date))}`;
+      // The label is the week of the workstream (W1, W2, ...), not the week of the year.
+      return `w:${mondayKey(day)}`;
     case 'monthly':
       return `m:${day.yearNum}-${day.monthNum}`;
   }
 }
 
-function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPerDay: number): PeriodColumn {
+/**
+ * `projectWeek` is the column's week of the workstream: 1 for the calendar week the workstream
+ * starts in, counting up one per calendar week from there.
+ */
+function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPerDay: number, projectWeek: number): PeriodColumn {
   const workingDays = days.filter((day) => day.isWorkingDay);
   const first = days[0];
   const firstWorking = workingDays[0] ?? first;
   const lastWorking = workingDays[workingDays.length - 1] ?? days[days.length - 1];
 
-  const iso = isoWeek(first.date);
   let label = '';
   let subLabel = '';
   let title = '';
@@ -194,11 +203,11 @@ function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPer
   if (phasing === 'daily') {
     subLabel = dayMonth(first);
     label = first.value > 0 ? `Day ${first.value}` : subLabel;
-    title = `${WEEKDAY_NAMES[first.weekday - 1]} ${dayMonth(first)} ${first.yearNum}, ISO week ${iso.week}`;
+    title = `${WEEKDAY_NAMES[first.weekday - 1]} ${dayMonth(first)} ${first.yearNum}, week ${projectWeek} of the workstream`;
   } else if (phasing === 'weekly') {
-    label = `W${iso.week}`;
+    label = `W${projectWeek}`;
     subLabel = dayMonth(firstWorking);
-    title = `Week ${iso.week} of ${iso.year}, ${dayMonth(firstWorking)} - ${dayMonth(lastWorking)} ${lastWorking.yearNum}, ${workingDays.length} working ${workingDays.length === 1 ? 'day' : 'days'}`;
+    title = `Week ${projectWeek} of the workstream, ${dayMonth(firstWorking)} - ${dayMonth(lastWorking)} ${lastWorking.yearNum}, ${workingDays.length} working ${workingDays.length === 1 ? 'day' : 'days'}`;
   } else {
     label = `${SHORT_MONTHS[first.monthNum - 1]} ${String(first.yearNum).slice(2)}`;
     subLabel = `${workingDays.length} days`;
@@ -215,10 +224,10 @@ function buildColumn(id: string, phasing: Phasing, days: TimelineDay[], hoursPer
     workingDays,
     dateKeys: workingDays.map((day) => day.dateKey),
     capacity: workingDays.length * hoursPerDay,
-    // Weekly columns carry the ISO week and week-year they are labelled with.
-    weekNum: phasing === 'weekly' ? iso.week : first.weekNum,
+    // Weekly columns carry the workstream week they are labelled with.
+    weekNum: phasing === 'weekly' ? projectWeek : first.weekNum,
     monthNum: first.monthNum,
-    yearNum: phasing === 'weekly' ? iso.year : first.yearNum,
+    yearNum: first.yearNum,
   };
 }
 
@@ -235,6 +244,13 @@ export function buildColumns(
 
   const sorted = [...timeline].sort((a, b) => (a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0));
 
+  // Week 1 is the calendar week (Monday to Sunday) the workstream starts in, whatever day that is.
+  const projectWeeks = new Map<string, number>();
+  for (const day of sorted) {
+    const monday = mondayKey(day);
+    if (!projectWeeks.has(monday)) projectWeeks.set(monday, projectWeeks.size + 1);
+  }
+
   const buckets = new Map<string, TimelineDay[]>();
   for (const day of sorted) {
     const key = bucketKey(day, phasing);
@@ -245,7 +261,7 @@ export function buildColumns(
 
   const columns: PeriodColumn[] = [];
   for (const [id, days] of buckets) {
-    columns.push(buildColumn(id, phasing, days, hoursPerDay));
+    columns.push(buildColumn(id, phasing, days, hoursPerDay, projectWeeks.get(mondayKey(days[0])) ?? 1));
   }
   return columns;
 }

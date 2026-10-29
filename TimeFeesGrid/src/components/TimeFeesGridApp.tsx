@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Grid, GridNotice } from './Grid';
+import { BulkEdit, Grid, GridNotice } from './Grid';
 import { Toolbar } from './Toolbar';
 import { colorVars } from '../colors';
 import { buildColumnLayout, densityForWidth } from '../gridColumns';
@@ -24,7 +24,7 @@ import {
  * the host, and asks the host to add or remove people instead of doing that itself.
  */
 export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement {
-  const { host, snapshot, snapshotVersion, onChange } = props;
+  const { host, snapshot, snapshotVersion, onChange, onHeight } = props;
 
   const [rootRef, size] = useElementSize<HTMLDivElement>();
   const density = densityForWidth(size.width || 1024);
@@ -47,7 +47,7 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
     [snapshot.timeline, phasing, host.hoursPerDay],
   );
   const model = React.useMemo(() => computeModel(peopleInOrder, store, columns), [peopleInOrder, store, columns]);
-  const layout = React.useMemo(() => buildColumnLayout(columns, density), [columns, density]);
+  const layout = React.useMemo(() => buildColumnLayout(columns, density, { fill: !host.readOnly }), [columns, density, host.readOnly]);
   // The outside-the-window chip narrows the grid to the people who have such hours; the filter
   // lapses by itself once nobody has any.
   const filterOn = outsideFilter && model.outsideWindowHours > 0;
@@ -138,6 +138,49 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
     applyPeople(nextPeople, 'ratesChanged', person.name);
   };
 
+  /**
+   * Paste, cut and Delete over a selection: every cell is applied to one new store (or one people
+   * list) and published once, so the host gets a single hoursChanged / ratesChanged payload.
+   */
+  const handleBulkEdit = (edit: BulkEdit): void => {
+    const cells = edit.hours.length + edit.rates.length;
+    const skipped = edit.skipped > 0 ? ` ${edit.skipped} ${edit.skipped === 1 ? 'cell was' : 'cells were'} skipped (not a number, or not editable here).` : '';
+    const nameOf = (keys: string[]): string => {
+      const unique = [...new Set(keys)];
+      return unique.length === 1 ? people.find((person) => person.key === unique[0])?.name ?? '' : '';
+    };
+
+    if (edit.hours.length > 0) {
+      let nextStore = store;
+      let over = 0;
+      for (const update of edit.hours) {
+        nextStore = setColumnHours(nextStore, update.period, update.rowKey, update.hours, host.hoursPerDay);
+        if (update.hours > update.period.capacity + 1e-6) over += 1;
+      }
+      const cleared = edit.hours.every((update) => update.hours === 0);
+      const overText = over > 0 ? ` ${over} ${over === 1 ? 'period is' : 'periods are'} above capacity.` : '';
+      show({
+        text: `${edit.verb} ${cells} ${cells === 1 ? 'cell' : 'cells'}.${overText}${skipped}`,
+        tone: over > 0 || edit.skipped > 0 ? 'warning' : 'info',
+      });
+      applyStore(nextStore, cleared ? 'hoursCleared' : 'hoursChanged', nameOf(edit.hours.map((update) => update.rowKey)));
+      return;
+    }
+
+    if (edit.rates.length > 0) {
+      const byKey = new Map(edit.rates.map((update) => [update.rowKey, update]));
+      const nextPeople = people.map((person) => {
+        const update = byKey.get(person.key);
+        if (!update) return person;
+        return update.field === 'rph'
+          ? { ...person, rph: update.value, realisation: realisationFromRph(update.value, person.feeRate) }
+          : { ...person, realisation: update.value, rph: rphFromRealisation(update.value, person.feeRate) };
+      });
+      show({ text: `${edit.verb} ${cells} ${cells === 1 ? 'rate' : 'rates'}.${skipped}`, tone: edit.skipped > 0 ? 'warning' : 'info' });
+      applyPeople(nextPeople, 'ratesChanged', nameOf(edit.rates.map((update) => update.rowKey)));
+    }
+  };
+
   const handleFillRight = (rowKey: string): void => {
     const row = model.rows.find((candidate) => candidate.key === rowKey);
     if (!row) return;
@@ -174,6 +217,48 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
   const warnings = host.showNotifications ? snapshot.warnings : [];
   const palette = React.useMemo(() => colorVars(host.colors) as React.CSSProperties, [host.colors]);
 
+  // Reports the height the grid needs to show every row: measured after each render and whenever
+  // the control is resized (a narrower control can wrap the toolbar or add a scrollbar).
+  const lastHeight = React.useRef(0);
+  const onHeightRef = React.useRef(onHeight);
+  onHeightRef.current = onHeight;
+  const reportHeight = React.useCallback((): void => {
+    const root = rootRef.current;
+    const report = onHeightRef.current;
+    if (!root || !report) return;
+    const height = requiredHeight(root);
+    if (height > 0 && height !== lastHeight.current) {
+      lastHeight.current = height;
+      report(height);
+    }
+  }, [rootRef]);
+  React.useLayoutEffect(reportHeight);
+  // Sizes can also change without a render: the control is resized and the toolbar wraps, or a
+  // web font arrives. Watch the root, the toolbar and the table themselves.
+  React.useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(reportHeight);
+    observer.observe(root);
+    const watched = new Set<Element>();
+    const watchParts = (): void => {
+      for (const part of Array.from(root.querySelectorAll('.tfg-toolbar, .tfg-table'))) {
+        if (!watched.has(part)) {
+          watched.add(part);
+          observer.observe(part);
+        }
+      }
+    };
+    watchParts();
+    // The table mounts and unmounts (empty grid, no timeline); pick it up when it appears.
+    const mutations = typeof MutationObserver === 'undefined' ? null : new MutationObserver(watchParts);
+    mutations?.observe(root, { childList: true });
+    return () => {
+      observer.disconnect();
+      mutations?.disconnect();
+    };
+  }, [rootRef, reportHeight]);
+
   return (
     <div className="tfg-root" ref={rootRef} style={palette} data-density={density} data-readonly={readOnly ? 'true' : undefined}>
       <Toolbar
@@ -187,13 +272,16 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
         onToggleOutsideFilter={() => setOutsideFilter(!filterOn)}
         onPhasingChange={setPhasing}
         onAddStaff={handleRequestAddStaff}
-      />
+      >
+        {/* The status floats under the toolbar instead of taking a row, so it never changes the
+            grid's height (the app sizes the control from requiredHeight). */}
+        {message ? (
+          <div className={`tfg-status tfg-status--${message.tone}`} role="status" aria-live="polite">
+            <span className="tfg-status__text">{message.text}</span>
+          </div>
+        ) : null}
+      </Toolbar>
 
-      {message ? (
-        <div className={`tfg-status tfg-status--${message.tone}`} role="status" aria-live="polite">
-          <span className="tfg-status__text">{message.text}</span>
-        </div>
-      ) : null}
 
       {snapshot.error ? <div className="tfg-banner tfg-banner--error">{snapshot.error}</div> : null}
       {warnings.length > 0 ? (
@@ -221,10 +309,35 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
           onSetHours={handleSetHours}
           onSetRate={handleSetRate}
           onFillRight={handleFillRight}
+          onBulkEdit={handleBulkEdit}
           onRequestRemove={handleRequestRemove}
           onNotice={handleNotice}
         />
       )}
     </div>
   );
+}
+
+/** Room the "no timeline" and loading messages take when the grid has nothing else to show. */
+const PLACEHOLDER_HEIGHT = 80;
+
+/**
+ * Height in pixels the control needs so that nothing scrolls vertically: the toolbar and any
+ * banners as drawn, plus the table's own height and the horizontal scrollbar under the timeline
+ * when there is one. The table is measured rather than the area around it, so the answer does not
+ * depend on how tall the control currently is.
+ */
+export function requiredHeight(root: HTMLElement): number {
+  let total = 0;
+  for (const child of Array.from(root.children) as HTMLElement[]) {
+    if (child.classList.contains('tfg-gridwrap')) {
+      const table = child.querySelector('table');
+      total += (table ? table.getBoundingClientRect().height : 0) + (child.offsetHeight - child.clientHeight);
+    } else if (child.classList.contains('tfg-placeholder')) {
+      total += PLACEHOLDER_HEIGHT;
+    } else {
+      total += child.getBoundingClientRect().height;
+    }
+  }
+  return Math.ceil(total - 0.01);
 }

@@ -22,6 +22,8 @@ function Harness(): React.ReactElement {
   const [pricingMethod, setPricingMethod] = React.useState<PricingMethod>('manualRate');
   const [colors, setColors] = React.useState<GridColors>(DEFAULT_COLORS);
   const [output, setOutput] = React.useState<GridOutput | null>(null);
+  /** The control's height, set from its requiredHeight output the way the app binds it. */
+  const [panelHeight, setPanelHeight] = React.useState<number | undefined>(undefined);
 
   const container = React.useRef<HTMLDivElement>(null);
   const component = React.useRef<TimeFeesGrid | null>(null);
@@ -41,6 +43,9 @@ function Harness(): React.ReactElement {
   const applyOutput = React.useCallback(
     (next: GridOutput) => {
       setOutput(next);
+
+      // Only the required height changed; the app's OnChange has no case for it.
+      if (next.action === 'heightChanged') return;
 
       if (next.action === 'addStaffRequested') {
         added.current += 1;
@@ -83,7 +88,11 @@ function Harness(): React.ReactElement {
     if (!element) return;
     if (component.current === null) {
       const instance = new TimeFeesGrid();
-      instance.init(fakeHost.context(), () => applyOutput(instance.getOutputs().changes as GridOutput));
+      instance.init(fakeHost.context(), () => {
+        const outputs = instance.getOutputs() as { changes?: GridOutput; requiredHeight?: number };
+        if (outputs.requiredHeight) setPanelHeight(outputs.requiredHeight);
+        applyOutput(outputs.changes as GridOutput);
+      });
       component.current = instance;
     }
     ReactDOM.render(component.current.updateView(fakeHost.context()), element);
@@ -140,7 +149,7 @@ function Harness(): React.ReactElement {
         ))}
       </div>
 
-      <div className="panel" ref={container} />
+      <div className="panel" ref={container} style={panelHeight ? { height: panelHeight, padding: 0, border: 0, boxSizing: 'content-box' } : undefined} />
 
       <pre className="output">{output ? JSON.stringify(output, null, 2) : 'No changes yet.'}</pre>
     </div>

@@ -69,9 +69,18 @@ describe('density layouts', () => {
         .filter((column) => column.kind !== 'period')
         .map((column) => column.kind);
 
-    expect(kinds('comfortable')).toEqual(['identity', 'rph', 'std', 'real', 'spacer', 'totalHours', 'fee', 'gm']);
-    expect(kinds('compact')).toEqual(['identity', 'rph', 'std', 'real', 'spacer', 'totalHours', 'fee']);
-    expect(kinds('narrow')).toEqual(['identity', 'rph', 'spacer', 'totalHours', 'fee']);
+    expect(kinds('comfortable')).toEqual(['identity', 'rph', 'std', 'real', 'fill', 'spacer', 'totalHours', 'fee', 'gm']);
+    expect(kinds('compact')).toEqual(['identity', 'rph', 'std', 'real', 'fill', 'spacer', 'totalHours', 'fee']);
+    expect(kinds('narrow')).toEqual(['identity', 'rph', 'fill', 'spacer', 'totalHours', 'fee']);
+  });
+
+  it('puts the Fill column between the rates and the timeline, and leaves it out when read-only', () => {
+    const layout = buildColumnLayout(weekly, 'comfortable');
+    const fill = layout.findIndex((column) => column.kind === 'fill');
+    expect(layout[fill - 1].kind).toBe('real');
+    expect(layout[fill + 1].kind).toBe('period');
+    expect(layout[fill]).toMatchObject({ label: 'Fill', align: 'center' });
+    expect(buildColumnLayout(weekly, 'comfortable', { fill: false }).some((column) => column.kind === 'fill')).toBe(false);
   });
 
   it('puts a single flexible gap between the timeline and the totals', () => {
@@ -96,12 +105,14 @@ describe('density layouts', () => {
       'rph',
       'std',
       'real',
+      'fill',
     ]);
     expect(layout[0]).toMatchObject({ kind: 'identity', stickyLeft: 0 });
     expect(byKind('rph')?.stickyLeft).toBe(widths.identity);
     expect(byKind('std')?.stickyLeft).toBe(widths.identity + widths.rph);
     expect(byKind('real')?.stickyLeft).toBe(widths.identity + widths.rph + widths.std);
-    expect(stickyLeftWidth(layout)).toBe(widths.identity + widths.rph + widths.std + widths.real);
+    expect(byKind('fill')?.stickyLeft).toBe(widths.identity + widths.rph + widths.std + widths.real);
+    expect(stickyLeftWidth(layout)).toBe(widths.identity + widths.rph + widths.std + widths.real + widths.fill);
 
     const hours = byKind('totalHours');
     const fee = byKind('fee');
@@ -115,16 +126,19 @@ describe('density layouts', () => {
 
   it('marks the pinned columns that face the scrolling timeline', () => {
     const comfortable = buildColumnLayout(weekly, 'comfortable');
-    expect(comfortable.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['real', 'totalHours']);
+    expect(comfortable.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['fill', 'totalHours']);
 
     const narrow = buildColumnLayout(weekly, 'narrow');
-    expect(narrow.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['rph']);
+    expect(narrow.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['fill']);
+
+    const readOnly = buildColumnLayout(weekly, 'comfortable', { fill: false });
+    expect(readOnly.filter((column) => column.stickyEdge).map((column) => column.kind)).toEqual(['real', 'totalHours']);
   });
 
   it('leaves the totals scrolling with the timeline on a narrow container', () => {
     const layout = buildColumnLayout(weekly, 'narrow');
     expect(stickyRightWidth(layout)).toBe(0);
     // The narrow density drops the STD and REAL% columns, so only the rates it keeps are pinned.
-    expect(stickyLeftWidth(layout)).toBe(DENSITY.narrow.widths.identity + DENSITY.narrow.widths.rph);
+    expect(stickyLeftWidth(layout)).toBe(DENSITY.narrow.widths.identity + DENSITY.narrow.widths.rph + DENSITY.narrow.widths.fill);
   });
 });

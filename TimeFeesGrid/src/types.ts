@@ -32,7 +32,9 @@ export type GridAction =
   | 'ratesChanged'
   | 'hoursFilled'
   | 'addStaffRequested'
-  | 'removePersonRequested';
+  | 'removePersonRequested'
+  /** Only the requiredHeight output changed; the data did not, and the app has nothing to write. */
+  | 'heightChanged';
 
 /** One person row, normalised from the host dataset. */
 export interface PersonRow {
@@ -84,7 +86,7 @@ export interface PeriodColumn {
   /** `d:2026-01-05` | `w:2026-01-05` (the Monday of the week) | `m:2026-1`. */
   id: string;
   phasing: Phasing;
-  /** `W3` (ISO week) | `Day 12` | `Jan 26`. */
+  /** `W3` (week of the workstream) | `Day 12` | `Jan 26`. */
   label: string;
   /** Secondary label: `05 Jan` for days and weeks, empty for months. */
   subLabel: string;
@@ -229,4 +231,6 @@ export interface TimeFeesGridAppProps {
   snapshotVersion: number;
   /** Called after every change with the payload the host should read back, requests included. */
   onChange: (output: GridOutput) => void;
+  /** Called with the height in pixels the grid needs to show every row without scrolling. */
+  onHeight?: (height: number) => void;
 }

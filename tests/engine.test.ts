@@ -90,7 +90,7 @@ describe('2. buildColumns phasings', () => {
     expect(daily[0].id).toBe('d:2026-01-05');
     expect(daily[0].label).toBe('Day 1');
     expect(daily[0].subLabel).toBe('05 Jan');
-    expect(daily[0].title).toBe('Monday 05 Jan 2026, ISO week 2');
+    expect(daily[0].title).toBe('Monday 05 Jan 2026, week 1 of the workstream');
     expect(daily[0].capacity).toBe(8);
     expect(daily[0].dateKeys).toEqual(['2026-01-05']);
     expect(daily[0].phasing).toBe('daily');
@@ -99,11 +99,12 @@ describe('2. buildColumns phasings', () => {
   it('builds weekly columns', () => {
     const weekly = buildColumns(timeline, 'weekly', 8);
     expect(weekly).toHaveLength(2);
-    // Keyed by the Monday of the week and labelled with its ISO week (5 Jan 2026 is ISO W2).
+    // Keyed by the Monday of the week and labelled with the week of the workstream.
     expect(weekly[0].id).toBe('w:2026-01-05');
-    expect(weekly[0].label).toBe('W2');
+    expect(weekly[0].label).toBe('W1');
+    expect(weekly[1].label).toBe('W2');
     expect(weekly[0].subLabel).toBe('05 Jan');
-    expect(weekly[0].title).toBe('Week 2 of 2026, 05 Jan - 09 Jan 2026, 5 working days');
+    expect(weekly[0].title).toBe('Week 1 of the workstream, 05 Jan - 09 Jan 2026, 5 working days');
     expect(weekly[0].capacity).toBe(40);
     expect(weekly[1].id).toBe('w:2026-01-12');
     expect(weekly[1].subLabel).toBe('12 Jan');

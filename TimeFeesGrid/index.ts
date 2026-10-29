@@ -93,6 +93,10 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
   private readonly pageSized = new Set<string>();
   /** Consecutive page requests made without the datasets becoming complete. */
   private pageRequests = 0;
+  /** Last height published on requiredHeight; 0 until the grid has been measured. */
+  private requiredHeight = 0;
+  /** True from an edit being published until the host reads the outputs. */
+  private changeUnread = false;
   private holidaysText = '';
   private holidays: string[] = [];
 
@@ -152,6 +156,7 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       snapshot,
       snapshotVersion: this.snapshotVersion,
       onChange: this.handleChange,
+      onHeight: this.handleHeight,
     };
     return React.createElement(TimeFeesGridApp, appProps);
   }
@@ -209,7 +214,9 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       dataSchema: CHANGES_SCHEMA_JSON,
       changes: this.latest ?? undefined,
       changesJson: this.latest === null ? '' : JSON.stringify(this.latest),
+      requiredHeight: this.requiredHeight > 0 ? this.requiredHeight : undefined,
     } as IOutputs;
+    this.changeUnread = false;
     return this.outputs;
   }
 
@@ -226,12 +233,35 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
 
   private handleChange = (output: GridOutput): void => {
     this.latest = output;
+    this.changeUnread = true;
     this.outputs = null;
     // Remember what this change looks like once the app has written it into its collections, so
     // the dataset refresh that follows is recognised as an echo instead of new data.
     if (this.snapshot !== null) {
       this.echoSignature = outputSignature(output, this.snapshot);
     }
+    this.notifyOutputChanged();
+  };
+
+  /**
+   * Publishes the height the grid needs. A canvas host runs OnChange for every output change, so
+   * the payload's action becomes "heightChanged": the app's OnChange has no case for it and does
+   * nothing, instead of repeating the user's last action (re-opening the staff picker, say).
+   *
+   * A change the host has not read yet keeps its own action: the host may read the outputs once
+   * for both notifications, and an edit relabelled "heightChanged" would never be written back.
+   * The new height then simply travels with that change.
+   */
+  private handleHeight = (height: number): void => {
+    if (height === this.requiredHeight) return;
+    this.requiredHeight = height;
+    if (!this.changeUnread) {
+      this.latest =
+        this.latest === null
+          ? { revision: 0, action: 'heightChanged', personName: '', allocations: [], people: [] }
+          : { ...this.latest, action: 'heightChanged', personName: '' };
+    }
+    this.outputs = null;
     this.notifyOutputChanged();
   };
 

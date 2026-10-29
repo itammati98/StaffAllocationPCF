@@ -86,6 +86,10 @@
   <data name="ShowNotifications_Desc" xml:space="preserve">
     <value>Turn on to show the dataset warnings above the timeline (for example when an optional table is not bound). Turn off to keep the grid silent.</value>
   </data>
+  <data name="RequiredHeight_Display" xml:space="preserve"><value>Required height</value></data>
+  <data name="RequiredHeight_Desc" xml:space="preserve">
+    <value>The height in pixels the grid needs to show the header, every person and the totals row without scrolling. Set the control's Height to Self.requiredHeight. When only this value changes, Changes carries the action "heightChanged", which OnChange can ignore.</value>
+  </data>
   <data name="Holidays_Display" xml:space="preserve"><value>Public holidays</value></data>
   <data name="Holidays_Desc" xml:space="preserve">
     <value>Optional. Dates that are not working days, as a JSON list such as ["2026-12-25","2026-12-28"] or JSON(colHolidays). Hours are never spread onto them and they do not count towards a period's capacity. Leave empty to treat every Monday to Friday as a working day.</value>

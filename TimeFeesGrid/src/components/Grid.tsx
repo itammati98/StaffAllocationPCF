@@ -15,6 +15,8 @@ import {
   initials,
   parseEditableNumber,
 } from '../format';
+import { parseClipboardTable, parsePastedNumber, toClipboardTable } from '../clipboard';
+import { round6 } from '../engine';
 import { GridModel, GridRow, PeriodColumn, PricingMethod } from '../types';
 
 export interface CellRef {
@@ -25,6 +27,19 @@ export interface CellRef {
 export interface GridNotice {
   text: string;
   tone: 'info' | 'warning';
+}
+
+/**
+ * Several cells changed at once (paste, cut, or Delete over a selection). The app applies them as
+ * one change, so the host receives a single payload. A batch holds hours or rates, never both.
+ */
+export interface BulkEdit {
+  hours: { rowKey: string; period: PeriodColumn; hours: number }[];
+  rates: { rowKey: string; field: 'rph' | 'realisation'; value: number }[];
+  /** What happened, for the status line: "Pasted", "Cut", "Cleared". */
+  verb: string;
+  /** Cells the batch could not use: text that is not a number, read-only cells, rates next to hours. */
+  skipped: number;
 }
 
 interface GridProps {
@@ -38,6 +53,7 @@ interface GridProps {
   onSetHours: (rowKey: string, column: PeriodColumn, hours: number) => void;
   onSetRate: (rowKey: string, field: 'rph' | 'realisation', value: number) => void;
   onFillRight: (rowKey: string) => void;
+  onBulkEdit: (edit: BulkEdit) => void;
   /** Asks the host application to remove the person; the component does not remove rows itself. */
   onRequestRemove: (personName: string) => void;
   onNotice: (notice: GridNotice) => void;
@@ -60,7 +76,20 @@ const GRID_LABEL = 'Time and fees allocation grid';
  * are the app's data, not the grid's.
  */
 export function Grid(props: GridProps): React.ReactElement {
-  const { layout, model, density, readOnly, pricingMethod, highlightOutside, onSetHours, onSetRate, onFillRight, onRequestRemove, onNotice } = props;
+  const {
+    layout,
+    model,
+    density,
+    readOnly,
+    pricingMethod,
+    highlightOutside,
+    onSetHours,
+    onSetRate,
+    onFillRight,
+    onBulkEdit,
+    onRequestRemove,
+    onNotice,
+  } = props;
 
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const tableRef = React.useRef<HTMLTableElement>(null);
@@ -72,14 +101,25 @@ export function Grid(props: GridProps): React.ReactElement {
   const editClosed = React.useRef(true);
 
   const [active, setActive] = React.useState<CellRef>({ row: 0, col: 0 });
+  /** The other corner of a selected block; null when only the focused cell is selected. */
+  const [anchor, setAnchor] = React.useState<CellRef | null>(null);
   const [editing, setEditing] = React.useState<{ text: string } | null>(null);
+  /** Cell a mouse drag started on, while the button is held. */
+  const dragFrom = React.useRef<CellRef | null>(null);
 
   const spec = DENSITY[density];
   const rows = model.rows;
 
-  /** Layout indexes that the keyboard can reach; the flexible gap between timeline and totals is skipped. */
+  /**
+   * Layout indexes that the keyboard can reach. The flexible gap between timeline and totals is
+   * skipped, and so is the Fill column: its buttons are reached with Tab, not as cells.
+   */
   const navigable = React.useMemo(
-    () => layout.map((column, index) => ({ column, index })).filter((entry) => entry.column.kind !== 'spacer').map((entry) => entry.index),
+    () =>
+      layout
+        .map((column, index) => ({ column, index }))
+        .filter((entry) => entry.column.kind !== 'spacer' && entry.column.kind !== 'fill')
+        .map((entry) => entry.index),
     [layout],
   );
   const navPosition = navigable.indexOf(active.col);
@@ -91,6 +131,30 @@ export function Grid(props: GridProps): React.ReactElement {
   const activeColumn = layout[activeCell.col];
 
   const cellId = (row: number, col: number): string => `${idPrefix.current}-c${row}-${col}`;
+
+  /** The selected block, in rows and navigable positions; a single cell when nothing is extended. */
+  const lastRow = Math.max(0, rows.length - 1);
+  const corner = anchor ?? activeCell;
+  const cornerRow = Math.min(corner.row, lastRow);
+  const cornerPosition = Math.max(0, navigable.indexOf(corner.col));
+  const activePosition = Math.max(0, navPosition);
+  const selection = {
+    top: Math.min(activeCell.row, cornerRow),
+    bottom: Math.max(activeCell.row, cornerRow),
+    left: Math.min(activePosition, cornerPosition),
+    right: Math.max(activePosition, cornerPosition),
+  };
+  const multiSelected = selection.top !== selection.bottom || selection.left !== selection.right;
+  const isSelected = (row: number, col: number): boolean => {
+    if (!multiSelected) return false;
+    const position = navigable.indexOf(col);
+    return row >= selection.top && row <= selection.bottom && position >= selection.left && position <= selection.right;
+  };
+  const clearSelection = (): void => setAnchor(null);
+  /** Keeps the block's far corner where it is while the focused cell moves. */
+  const extendSelection = (): void => {
+    if (anchor === null) setAnchor(activeCell);
+  };
 
   /** Only numeric cells the user may type into: period hours and the rate the pricing mode owns. */
   const isNumberCell = (row: GridRow | undefined, column: ColumnLayout | undefined): boolean => {
@@ -276,7 +340,18 @@ export function Grid(props: GridProps): React.ReactElement {
       return;
     }
 
+    // Shift with an arrow key grows the selected block; any other key leaves a single cell.
+    if (event.shiftKey && (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight')) {
+      event.preventDefault();
+      extendSelection();
+      applyMove(key === 'ArrowUp' ? 'up' : key === 'ArrowDown' ? 'down' : key === 'ArrowLeft' ? 'left' : 'right');
+      return;
+    }
+    if (key !== 'Shift' && key !== 'Delete' && key !== 'Backspace') clearSelection();
+
     switch (key) {
+      case 'Escape':
+        return;
       case 'ArrowUp':
         event.preventDefault();
         applyMove('up');
@@ -321,7 +396,8 @@ export function Grid(props: GridProps): React.ReactElement {
       case 'Delete':
       case 'Backspace':
         event.preventDefault();
-        clearActiveCell();
+        if (multiSelected) clearCells('Cleared');
+        else clearActiveCell();
         return;
       default:
         break;
@@ -337,10 +413,34 @@ export function Grid(props: GridProps): React.ReactElement {
     if ((event.target as HTMLElement).closest('button')) return;
     if (editing && activeCell.row === row && activeCell.col === col) return;
     if (editing) commitEdit('none');
+    if (event.shiftKey) {
+      // Shift+click selects the block from the focused cell to this one.
+      event.preventDefault();
+      extendSelection();
+    } else {
+      clearSelection();
+      dragFrom.current = { row, col };
+    }
     setActive({ row, col });
     const table = tableRef.current;
     if (table && document.activeElement !== table) table.focus();
   };
+
+  /** Dragging across cells with the button held selects the block, the way a spreadsheet does. */
+  const handleCellPointerEnter = (event: React.MouseEvent<HTMLTableCellElement>, row: number, col: number): void => {
+    const from = dragFrom.current;
+    if (!from || editing || (event.buttons & 1) === 0) return;
+    if (anchor === null || anchor.row !== from.row || anchor.col !== from.col) setAnchor(from);
+    setActive({ row, col });
+  };
+
+  React.useEffect(() => {
+    const endDrag = (): void => {
+      dragFrom.current = null;
+    };
+    window.addEventListener('mouseup', endDrag);
+    return () => window.removeEventListener('mouseup', endDrag);
+  }, []);
 
   const handleCellDoubleClick = (row: number, col: number): void => {
     setActive({ row, col });
@@ -390,6 +490,159 @@ export function Grid(props: GridProps): React.ReactElement {
       table.focus();
     }
   }, [editing !== null]);
+
+  // ------------------------------------------------------------------------------- clipboard
+
+  /** Plain, unformatted text a spreadsheet can read back: 7.5 not "7.5h", 95 for 95%. */
+  const cellCopyText = (row: GridRow, column: ColumnLayout): string => {
+    switch (column.kind) {
+      case 'identity':
+        return row.person.name;
+      case 'rph':
+        return String(round6(row.person.rph));
+      case 'std':
+        return String(round6(row.person.feeRate));
+      case 'real':
+        return String(round6(row.realisation * 100));
+      case 'period':
+        return column.period ? formatEditableNumber(row.hours[column.period.id] || 0) : '';
+      case 'totalHours':
+        return String(round6(row.totalHours));
+      case 'fee':
+        return String(round6(row.fee));
+      case 'gm':
+        return String(round6(row.gm * 100));
+      default:
+        return '';
+    }
+  };
+
+  const selectedText = (): string => {
+    const cells: string[][] = [];
+    for (let rowIndex = selection.top; rowIndex <= selection.bottom; rowIndex += 1) {
+      const row = rows[rowIndex];
+      if (!row) continue;
+      const line: string[] = [];
+      for (let position = selection.left; position <= selection.right; position += 1) {
+        line.push(cellCopyText(row, layout[navigable[position]]));
+      }
+      cells.push(line);
+    }
+    return toClipboardTable(cells);
+  };
+
+  /** Turns cell values into one batch; hours win when a block covers both hours and rates. */
+  const collectEdit = (targets: { rowIndex: number; position: number; text: string }[], verb: string): BulkEdit => {
+    const edit: BulkEdit = { hours: [], rates: [], verb, skipped: 0 };
+    for (const target of targets) {
+      const row = rows[target.rowIndex];
+      const column = layout[navigable[target.position]];
+      if (!row || !column || !isNumberCell(row, column)) {
+        edit.skipped += 1;
+        continue;
+      }
+      const value = parsePastedNumber(target.text);
+      if (value === null) {
+        edit.skipped += 1;
+      } else if (column.kind === 'period' && column.period) {
+        edit.hours.push({ rowKey: row.key, period: column.period, hours: value });
+      } else if (column.kind === 'rph') {
+        edit.rates.push({ rowKey: row.key, field: 'rph', value });
+      } else if (column.kind === 'real') {
+        edit.rates.push({ rowKey: row.key, field: 'realisation', value: value / 100 });
+      }
+    }
+    // One payload carries one action, so a block of hours and rates keeps the hours.
+    if (edit.hours.length > 0 && edit.rates.length > 0) {
+      edit.skipped += edit.rates.length;
+      edit.rates = [];
+    }
+    return edit;
+  };
+
+  /** Sets every editable cell of the selection to 0 (Delete over a block, and Cut). */
+  const clearCells = (verb: string): void => {
+    if (readOnly) return;
+    const targets: { rowIndex: number; position: number; text: string }[] = [];
+    for (let rowIndex = selection.top; rowIndex <= selection.bottom; rowIndex += 1) {
+      for (let position = selection.left; position <= selection.right; position += 1) {
+        if (isNumberCell(rows[rowIndex], layout[navigable[position]])) targets.push({ rowIndex, position, text: '' });
+      }
+    }
+    const edit = collectEdit(targets, verb);
+    if (edit.hours.length > 0 || edit.rates.length > 0) onBulkEdit({ ...edit, skipped: 0 });
+  };
+
+  /**
+   * Pastes spreadsheet text. One copied value pasted over a selected block fills the whole block;
+   * otherwise the copied block lands with its top-left cell on the selection's top-left cell, and
+   * whatever falls past the grid's edge is dropped. The pasted area is selected afterwards.
+   */
+  const pasteText = (text: string): void => {
+    if (readOnly) return;
+    const block = parseClipboardTable(text);
+    if (block.length === 0) return;
+    const targets: { rowIndex: number; position: number; text: string }[] = [];
+    if (block.length === 1 && block[0].length === 1 && multiSelected) {
+      for (let rowIndex = selection.top; rowIndex <= selection.bottom; rowIndex += 1) {
+        for (let position = selection.left; position <= selection.right; position += 1) {
+          targets.push({ rowIndex, position, text: block[0][0] });
+        }
+      }
+    } else {
+      block.forEach((line, rowOffset) => {
+        line.forEach((cell, columnOffset) => {
+          const rowIndex = selection.top + rowOffset;
+          const position = selection.left + columnOffset;
+          if (rowIndex < rows.length && position < navigable.length) targets.push({ rowIndex, position, text: cell });
+        });
+      });
+    }
+    if (targets.length === 0) return;
+    const edit = collectEdit(targets, 'Pasted');
+    if (edit.hours.length === 0 && edit.rates.length === 0) {
+      onNotice({ text: 'Nothing pasted: only hours and the editable rate can take a pasted number.', tone: 'warning' });
+      return;
+    }
+    onBulkEdit(edit);
+    const last = targets[targets.length - 1];
+    setActive({ row: selection.top, col: navigable[selection.left] });
+    setAnchor(targets.length > 1 ? { row: last.rowIndex, col: navigable[last.position] } : null);
+  };
+
+  // Copy, cut and paste arrive as clipboard events, which need no clipboard permission. They are
+  // taken only while the grid itself has focus; inside the cell editor the browser's own copy and
+  // paste of text apply. The handlers are read through a ref so the listeners are added once.
+  const clipboard = React.useRef({ copy: selectedText, cut: (): void => clearCells('Cut'), paste: pasteText });
+  clipboard.current = { copy: selectedText, cut: (): void => clearCells('Cut'), paste: pasteText };
+  React.useEffect(() => {
+    const owns = (): boolean => !!tableRef.current && document.activeElement === tableRef.current;
+    const onCopy = (event: ClipboardEvent, cut: boolean): void => {
+      if (!owns() || !event.clipboardData) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.clipboardData.setData('text/plain', clipboard.current.copy());
+      if (cut) clipboard.current.cut();
+    };
+    const copy = (event: ClipboardEvent): void => onCopy(event, false);
+    const cut = (event: ClipboardEvent): void => onCopy(event, true);
+    const paste = (event: ClipboardEvent): void => {
+      if (!owns() || !event.clipboardData) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      clipboard.current.paste(event.clipboardData.getData('text/plain'));
+    };
+    // Capture on window, so the grid is served before any page-level handler of the host.
+    window.addEventListener('copy', copy, true);
+    window.addEventListener('cut', cut, true);
+    window.addEventListener('paste', paste, true);
+    return () => {
+      window.removeEventListener('copy', copy, true);
+      window.removeEventListener('cut', cut, true);
+      window.removeEventListener('paste', paste, true);
+    };
+  }, []);
+
 
   const cellStyle = (column: ColumnLayout): React.CSSProperties => ({
     left: column.stickyLeft,
@@ -447,20 +700,6 @@ export function Grid(props: GridProps): React.ReactElement {
         <span className="tfg-rowactions">
           <button
             type="button"
-            className="tfg-iconbtn tfg-iconbtn--small"
-            tabIndex={isActive ? 0 : -1}
-            disabled={row.totalHours === 0}
-            title="Fill the row: repeat the first period that has hours across every following period"
-            aria-label={`Fill ${row.person.name} across the workstream`}
-            onClick={() => onFillRight(row.key)}
-          >
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-              <path d="M1 7.2h6.2V5L11.6 8l-4.4 3V8.8H1z" fill="currentColor" />
-              <path d="M12.4 4.6h2v6.8h-2z" fill="currentColor" />
-            </svg>
-          </button>
-          <button
-            type="button"
             className="tfg-iconbtn tfg-iconbtn--small tfg-iconbtn--danger"
             tabIndex={isActive ? 0 : -1}
             title="Ask the app to remove this person and their hours"
@@ -490,10 +729,43 @@ export function Grid(props: GridProps): React.ReactElement {
       className: `tfg-td tfg-td--${column.kind} tfg-align--${column.align}${stickyClass(column)}`,
       style: { ...cellStyle(column) } as React.CSSProperties,
       'data-active': isActive || undefined,
+      'data-selected': isSelected(rowIndex, colIndex) || undefined,
     };
 
     if (column.kind === 'identity') {
-      return <td {...base}>{identityCell(row, isActive)}</td>;
+      return (
+        <td
+          {...base}
+          onMouseDown={(event) => handleCellPointerDown(event, rowIndex, colIndex)}
+          onMouseEnter={(event) => handleCellPointerEnter(event, rowIndex, colIndex)}
+        >
+          {identityCell(row, isActive)}
+        </td>
+      );
+    }
+
+    if (column.kind === 'fill') {
+      return (
+        <td {...base} data-selected={undefined}>
+          <button
+            type="button"
+            className="tfg-fillbtn"
+            tabIndex={rowIndex === activeCell.row ? 0 : -1}
+            disabled={row.totalHours === 0}
+            title={
+              row.totalHours === 0
+                ? 'Book hours in a period first, then fill them across the following periods'
+                : 'Fill the row: copy the first period that has hours into every following period'
+            }
+            aria-label={`Fill ${row.person.name} across the following periods`}
+            onClick={() => onFillRight(row.key)}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path d="M1.5 7.25h9.69L8.22 4.28l1.06-1.06L14.06 8l-4.78 4.78-1.06-1.06 2.97-2.97H1.5v-1.5z" fill="currentColor" />
+            </svg>
+          </button>
+        </td>
+      );
     }
 
     if (column.kind === 'period' && column.period) {
@@ -510,6 +782,7 @@ export function Grid(props: GridProps): React.ReactElement {
           title={over ? `${column.period.title}: ${formatHours(hours)}h booked, capacity ${formatHours(column.period.capacity)}h` : undefined}
           aria-label={label}
           onMouseDown={(event) => handleCellPointerDown(event, rowIndex, colIndex)}
+          onMouseEnter={(event) => handleCellPointerEnter(event, rowIndex, colIndex)}
           onDoubleClick={() => handleCellDoubleClick(rowIndex, colIndex)}
         >
           {isEditing && editing && editable ? (
@@ -540,6 +813,7 @@ export function Grid(props: GridProps): React.ReactElement {
         data-outside={(outside && highlightOutside) || undefined}
         title={outside ? outsideWindowTitle(row) : undefined}
         onMouseDown={(event) => handleCellPointerDown(event, rowIndex, colIndex)}
+        onMouseEnter={(event) => handleCellPointerEnter(event, rowIndex, colIndex)}
         onDoubleClick={() => handleCellDoubleClick(rowIndex, colIndex)}
       >
         {isEditing && editing ? (
@@ -563,6 +837,10 @@ export function Grid(props: GridProps): React.ReactElement {
   const footerCell = (column: ColumnLayout, index: number): React.ReactNode => {
     if (column.kind === 'spacer') {
       return <td key={`spacer-foot-${index}`} className="tfg-tf tfg-tf--spacer" aria-hidden="true" />;
+    }
+
+    if (column.kind === 'fill') {
+      return <td key={`f-${index}`} className={`tfg-tf tfg-tf--fill${stickyClass(column)}`} style={cellStyle(column)} aria-hidden="true" />;
     }
 
     const totals = model.totals;

@@ -29,6 +29,8 @@ interface ToolbarProps {
   /** Public holidays inside the workstream window, for the working-days note in the monthly view. */
   holidayCount: number;
   onToggleOutsideFilter: () => void;
+  /** Floating content anchored under the toolbar (the status message). */
+  children?: React.ReactNode;
   onPhasingChange: (phasing: Phasing) => void;
   /** Asks the host application to add a person; the app owns that flow. */
   onAddStaff: () => void;
@@ -127,6 +129,8 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
         </svg>
         Add staff
       </button>
+
+      {props.children}
 
     </div>
   );

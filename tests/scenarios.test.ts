@@ -61,9 +61,10 @@ describe('a workstream that starts on a Wednesday', () => {
   const timeline = buildTimeline(new Date(2026, 0, 7), 2);
   const weekly = buildColumns(timeline, 'weekly', 8);
 
-  it('groups the days into Monday-to-Friday weeks keyed by their Monday', () => {
+  it('groups the days into Monday-to-Friday weeks keyed by their Monday, numbered from the start', () => {
     expect(weekly.map((column) => column.id)).toEqual(['w:2026-01-05', 'w:2026-01-12', 'w:2026-01-19']);
-    expect(weekly.map((column) => column.label)).toEqual(['W2', 'W3', 'W4']);
+    // The part week the workstream starts in is week 1.
+    expect(weekly.map((column) => column.label)).toEqual(['W1', 'W2', 'W3']);
     expect(weekly.map((column) => column.workingDays.length)).toEqual([3, 5, 2]);
     expect(weekly.map((column) => column.capacity)).toEqual([24, 40, 16]);
   });
@@ -95,12 +96,13 @@ describe('a month that splits a week, across New Year', () => {
   // Monday 28 Dec 2026 for two weeks.
   const timeline = buildTimeline(new Date(2026, 11, 28), 2);
 
-  it('labels the weeks with their ISO week: 28 Dec 2026 is W53, 4 Jan 2027 is W1', () => {
+  it('numbers the weeks of the workstream straight across New Year', () => {
     const weekly = buildColumns(timeline, 'weekly', 8);
-    expect(weekly.map((column) => [column.id, column.label, column.yearNum])).toEqual([
-      ['w:2026-12-28', 'W53', 2026],
-      ['w:2027-01-04', 'W1', 2027],
+    expect(weekly.map((column) => [column.id, column.label, column.weekNum])).toEqual([
+      ['w:2026-12-28', 'W1', 1],
+      ['w:2027-01-04', 'W2', 2],
     ]);
+    // ISO weeks are still what the adapter falls back to for a timeline without WeekNum.
     expect(isoWeek(new Date(2027, 0, 1))).toEqual({ week: 53, year: 2026 });
     expect(isoWeek(new Date(2027, 0, 4))).toEqual({ week: 1, year: 2027 });
   });
