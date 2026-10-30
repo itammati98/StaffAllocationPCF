@@ -94,6 +94,7 @@ export function Grid(props: GridProps): React.ReactElement {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const tableRef = React.useRef<HTMLTableElement>(null);
   const editorRef = React.useRef<HTMLInputElement>(null);
+  const fillerRef = React.useRef<HTMLTableCellElement>(null);
   const idPrefix = React.useRef(`tfg-${Math.random().toString(36).slice(2, 9)}`);
   const caretAtEnd = React.useRef(false);
   const hadFocus = React.useRef(false);
@@ -112,7 +113,7 @@ export function Grid(props: GridProps): React.ReactElement {
 
   /**
    * Layout indexes of the cells that can be focused, selected and copied. The Fill column's buttons
-   * are reached with Tab, and the Hours and Fee columns are display-only.
+   * are reached with Tab, and the Hours, Fee and GM% columns are display-only.
    */
   const navigable = React.useMemo(
     () =>
@@ -487,6 +488,28 @@ export function Grid(props: GridProps): React.ReactElement {
     if (rect.top < topBound) wrapper.scrollTop -= topBound - rect.top;
     else if (rect.bottom > bottomBound) wrapper.scrollTop += rect.bottom - bottomBound;
   }, [activeCell.row, activeCell.col, layout, spec.headerHeight, spec.footerHeight, rows.length]);
+
+  // The total row sits against the bottom of the grid however few people there are: the filler row
+  // takes exactly the height the header, rows and total leave. Set in pixels because a table shares
+  // spare height across its rows, which would stretch the people instead.
+  const fitFiller = React.useCallback((): void => {
+    const wrapper = wrapperRef.current;
+    const table = tableRef.current;
+    const filler = fillerRef.current;
+    if (!wrapper || !table || !filler) return;
+    const parts = [table.tHead, table.tBodies[0], table.tFoot];
+    const used = parts.reduce((sum, part) => sum + (part ? part.getBoundingClientRect().height : 0), 0);
+    filler.style.height = `${Math.max(0, Math.floor(wrapper.clientHeight - used))}px`;
+  }, []);
+  React.useLayoutEffect(fitFiller);
+  const hasRows = rows.length > 0;
+  React.useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(fitFiller);
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, [fitFiller, hasRows]);
 
   // Runs only when an edit starts or ends: re-running on every keystroke would reset the caret.
   // A layout effect so the editor owns the keyboard before the next keystroke arrives.
@@ -967,6 +990,12 @@ export function Grid(props: GridProps): React.ReactElement {
               {layout.map((column, colIndex) => bodyCell(row, rowIndex, column, colIndex))}
             </tr>
           ))}
+        </tbody>
+        {/* Takes whatever height the rows leave, so the total row always sits at the bottom. */}
+        <tbody className="tfg-filler" aria-hidden="true">
+          <tr>
+            <td ref={fillerRef} colSpan={layout.length} />
+          </tr>
         </tbody>
         <tfoot>
           <tr role="row" aria-rowindex={rows.length + 2}>

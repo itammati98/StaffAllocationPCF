@@ -70,11 +70,11 @@ describe('period columns', () => {
 });
 
 describe('selectable columns and Ctrl jumps', () => {
-  it('keeps Hours, Fee, Fill and the gap out of selection', () => {
+  it('keeps Hours, Fee, GM%, Fill and the gap out of selection', () => {
     const kinds = buildColumnLayout(buildColumns(timeline(), 'weekly', HOURS_PER_DAY), 'comfortable')
       .map((column) => column.kind)
       .filter(isSelectableColumn);
-    expect(kinds).toEqual(['identity', 'rph', 'std', 'real', 'period', 'period', 'gm']);
+    expect(kinds).toEqual(['identity', 'rph', 'std', 'real', 'period', 'period']);
   });
 
   it('stops at the first and last period, then goes on to the end of the row', () => {

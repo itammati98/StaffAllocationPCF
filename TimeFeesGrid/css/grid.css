@@ -211,8 +211,16 @@
   color: #ffffff;
 }
 
+/* Fluent's primary button states, which the app's modern buttons use. These must outrank the
+   plain .tfg-btn hover, whose pale fill would leave white text on near-white. */
 .tfg-btn--primary:hover:not(:disabled) {
-  filter: brightness(0.92);
+  background: var(--tfg-accent-hover);
+  border-color: var(--tfg-accent-hover);
+}
+
+.tfg-btn--primary:active:not(:disabled) {
+  background: var(--tfg-accent-pressed);
+  border-color: var(--tfg-accent-pressed);
 }
 
 .tfg-btn--add {
@@ -227,10 +235,6 @@
   font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
   font-size: 12px;
   font-weight: 600;
-}
-
-.tfg-btn--add:active:not(:disabled) {
-  filter: brightness(0.8);
 }
 
 /* Fluent's disabled button rather than a faded primary one. */
@@ -812,6 +816,19 @@
 .tfg-fillbtn:disabled {
   color: var(--tfg-text-soft);
   cursor: default;
+}
+
+/* ---------------------------------------------------------------- filler */
+
+/* The empty stretch between the last person and the total row; Grid sets its height in pixels. */
+.tfg-filler td {
+  padding: 0;
+  border: 0;
+}
+
+.tfg-table tbody.tfg-filler tr,
+.tfg-table tbody.tfg-filler tr:hover {
+  background: var(--tfg-bg);
 }
 
 /* ------------------------------------------------------------- selection */

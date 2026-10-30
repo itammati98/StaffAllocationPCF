@@ -74,6 +74,18 @@ describe('colorVars', () => {
     expect(vars['--tfg-warn-strong']).toMatch(/^rgb\(/);
   });
 
+  it('gives the default accent the hover and pressed shades of a modern Power Apps button', () => {
+    const vars = colorVars(DEFAULT_COLORS);
+    expect(vars['--tfg-accent-hover']).toBe('#115ea3');
+    expect(vars['--tfg-accent-pressed']).toBe('#0c3b5e');
+  });
+
+  it('darkens any other accent for the button states', () => {
+    const vars = colorVars({ ...DEFAULT_COLORS, accent: '#7a1fa2' });
+    expect(vars['--tfg-accent-hover']).not.toBe('#115ea3');
+    expect(vars['--tfg-accent-hover']).not.toBe('#7a1fa2');
+  });
+
   it('keeps every fill that can land on a pinned column opaque', () => {
     // The timeline scrolls under the person and rate columns, so a translucent fill would show it
     // through them: the active row and cell are composited over the background instead.

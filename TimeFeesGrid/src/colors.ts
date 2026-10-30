@@ -67,6 +67,13 @@ export const DEFAULT_COLORS: GridColors = {
   danger: '#a4262c',
 };
 
+/** colorBrandBackgroundHover and colorBrandBackgroundPressed of Fluent's web light theme. */
+const FLUENT_BRAND_HOVER = '#115ea3';
+const FLUENT_BRAND_PRESSED = '#0c3b5e';
+/** How far a custom accent is darkened for the button's hover and pressed states. */
+const BUTTON_HOVER_ALPHA = 0.14;
+const BUTTON_PRESSED_ALPHA = 0.5;
+
 /** Alpha of the soft accent chrome (selected segment, status strip, pricing chip). */
 const SOFT_ALPHA = 0.1;
 /** Alpha the accent is composited at for the row that holds the focused cell. */
@@ -137,6 +144,15 @@ function withAlpha(color: string, alpha: number, fallback: string): string {
 }
 
 /** `color` composited over `base` at `alpha`, always opaque. */
+/**
+ * The hover or pressed fill of the primary button. The default accent is Fluent's brand colour, so
+ * it takes Fluent's own shade, the one a modern Power Apps button uses; any other accent is darkened
+ * by about the same amount.
+ */
+function buttonShade(accent: string, fluentShade: string, alpha: number): string {
+  return accent.toLowerCase() === DEFAULT_COLORS.accent ? fluentShade : blendOver('#000000', accent, alpha, fluentShade);
+}
+
 function blendOver(color: string, base: string, alpha: number, fallback: string): string {
   const top = parseColor(color);
   const bottom = parseColor(base);
@@ -208,6 +224,8 @@ export function colorVars(colors: GridColors): Record<string, string> {
   const background = opaque(colors.background, DEFAULT_COLORS.background);
   return {
     '--tfg-accent': colors.accent,
+    '--tfg-accent-hover': buttonShade(colors.accent, FLUENT_BRAND_HOVER, BUTTON_HOVER_ALPHA),
+    '--tfg-accent-pressed': buttonShade(colors.accent, FLUENT_BRAND_PRESSED, BUTTON_PRESSED_ALPHA),
     '--tfg-accent-soft': withAlpha(colors.accent, SOFT_ALPHA, DEFAULT_COLORS.accent),
     '--tfg-active-row': blendOver(colors.accent, background, ACTIVE_ROW_ALPHA, DEFAULT_COLORS.accent),
     '--tfg-active-cell': blendOver(colors.accent, background, ACTIVE_CELL_ALPHA, DEFAULT_COLORS.accent),

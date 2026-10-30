@@ -162,10 +162,10 @@ export function buildColumnLayout(
 
 /**
  * Whether a column's cells can be focused, selected and copied. The gap between timeline and totals
- * and the Fill column are not cells, and the Hours and Fee columns are display-only.
+ * and the Fill column are not cells, and the Hours, Fee and GM% columns are display-only.
  */
 export function isSelectableColumn(kind: CellKind): boolean {
-  return kind !== 'spacer' && kind !== 'fill' && kind !== 'totalHours' && kind !== 'fee';
+  return kind !== 'spacer' && kind !== 'fill' && kind !== 'totalHours' && kind !== 'fee' && kind !== 'gm';
 }
 
 /**

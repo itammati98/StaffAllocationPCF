@@ -346,9 +346,13 @@ export function requiredHeight(root: HTMLElement): number {
   return Math.ceil(total - 0.01);
 }
 
-/** The table's height without the rows past `MAX_VISIBLE_ROWS`. */
+/**
+ * Header, the first `MAX_VISIBLE_ROWS` people and the total row. These are added up rather than
+ * read from the table, whose filler row stretches to fill the control and would never let the
+ * height shrink.
+ */
 function tableHeight(table: HTMLTableElement): number {
-  const rows = Array.from(table.tBodies[0]?.rows ?? []);
-  const hidden = rows.slice(MAX_VISIBLE_ROWS).reduce((sum, row) => sum + row.getBoundingClientRect().height, 0);
-  return table.getBoundingClientRect().height - hidden;
+  const rows = Array.from(table.tBodies[0]?.rows ?? []).slice(0, MAX_VISIBLE_ROWS);
+  const parts: (Element | null | undefined)[] = [table.tHead, ...rows, table.tFoot];
+  return parts.reduce((sum, part) => sum + (part ? part.getBoundingClientRect().height : 0), 0);
 }

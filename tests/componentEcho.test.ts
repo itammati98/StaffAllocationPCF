@@ -196,7 +196,8 @@ describe('required height', () => {
 
   /** Toolbar 33, header 34, rows of 40, total row 30, and a 10px horizontal scrollbar. */
   const root = (people: number): HTMLElement => {
-    const table = { ...box(34 + people * 40 + 30), tBodies: [{ rows: Array.from({ length: people }, () => box(40)) }] };
+    // The table itself reports a stretched height, which the measurement must ignore.
+    const table = { ...box(900), tHead: box(34), tFoot: box(30), tBodies: [{ rows: Array.from({ length: people }, () => box(40)) }] };
     const wrap = { classList: { contains: (name: string) => name === 'tfg-gridwrap' }, querySelector: () => table, offsetHeight: 200, clientHeight: 190 };
     const toolbar = { ...box(33), classList: { contains: () => false } };
     return { children: [toolbar, wrap] } as unknown as HTMLElement;
