@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ColumnLayout, DENSITY, Density, stickyLeftWidth, stickyRightWidth } from '../gridColumns';
+import { ColumnLayout, DENSITY, Density, isSelectableColumn, jumpPosition, stickyLeftWidth, stickyRightWidth } from '../gridColumns';
 import {
   avatarTone,
   formatDateKey,
@@ -111,14 +111,14 @@ export function Grid(props: GridProps): React.ReactElement {
   const rows = model.rows;
 
   /**
-   * Layout indexes that the keyboard can reach. The flexible gap between timeline and totals is
-   * skipped, and so is the Fill column: its buttons are reached with Tab, not as cells.
+   * Layout indexes of the cells that can be focused, selected and copied. The Fill column's buttons
+   * are reached with Tab, and the Hours and Fee columns are display-only.
    */
   const navigable = React.useMemo(
     () =>
       layout
         .map((column, index) => ({ column, index }))
-        .filter((entry) => entry.column.kind !== 'spacer' && entry.column.kind !== 'fill')
+        .filter((entry) => isSelectableColumn(entry.column.kind))
         .map((entry) => entry.index),
     [layout],
   );
@@ -300,10 +300,24 @@ export function Grid(props: GridProps): React.ReactElement {
     if (event.ctrlKey || event.metaKey) {
       if (key === 'Home') {
         event.preventDefault();
+        clearSelection();
         setActive({ row: 0, col: navigable[0] });
       } else if (key === 'End') {
         event.preventDefault();
+        clearSelection();
         setActive({ row: rows.length - 1, col: navigable[navigable.length - 1] });
+      } else if (!editing && (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight')) {
+        // Ctrl+arrow jumps to the edge of the table; with Shift it selects everything on the way.
+        // In the cell editor the browser's own word-by-word caret move applies instead.
+        event.preventDefault();
+        if (event.shiftKey) extendSelection();
+        else clearSelection();
+        const kinds = navigable.map((index) => layout[index].kind);
+        if (key === 'ArrowUp' || key === 'ArrowDown') {
+          setActive({ row: key === 'ArrowUp' ? 0 : rows.length - 1, col: activeCell.col });
+        } else {
+          setActive({ row: activeCell.row, col: navigable[jumpPosition(kinds, activePosition, key === 'ArrowRight' ? 1 : -1)] });
+        }
       }
       return;
     }
@@ -468,7 +482,8 @@ export function Grid(props: GridProps): React.ReactElement {
     }
 
     const topBound = view.top + headHeight;
-    const bottomBound = view.bottom - footHeight;
+    // clientHeight leaves out the horizontal scrollbar, so a row never stops behind the totals.
+    const bottomBound = view.top + wrapper.clientHeight - footHeight;
     if (rect.top < topBound) wrapper.scrollTop -= topBound - rect.top;
     else if (rect.bottom > bottomBound) wrapper.scrollTop += rect.bottom - bottomBound;
   }, [activeCell.row, activeCell.col, layout, spec.headerHeight, spec.footerHeight, rows.length]);
@@ -812,9 +827,13 @@ export function Grid(props: GridProps): React.ReactElement {
         data-locked={!editable || undefined}
         data-outside={(outside && highlightOutside) || undefined}
         title={outside ? outsideWindowTitle(row) : undefined}
-        onMouseDown={(event) => handleCellPointerDown(event, rowIndex, colIndex)}
-        onMouseEnter={(event) => handleCellPointerEnter(event, rowIndex, colIndex)}
-        onDoubleClick={() => handleCellDoubleClick(rowIndex, colIndex)}
+        {...(isSelectableColumn(column.kind)
+          ? {
+              onMouseDown: (event: React.MouseEvent<HTMLTableCellElement>) => handleCellPointerDown(event, rowIndex, colIndex),
+              onMouseEnter: (event: React.MouseEvent<HTMLTableCellElement>) => handleCellPointerEnter(event, rowIndex, colIndex),
+              onDoubleClick: () => handleCellDoubleClick(rowIndex, colIndex),
+            }
+          : {})}
       >
         {isEditing && editing ? (
           <input
@@ -850,7 +869,7 @@ export function Grid(props: GridProps): React.ReactElement {
         content = (
           <span className="tfg-identity">
             <span className="tfg-identity__text">
-              <span className="tfg-identity__name tfg-identity__name--totals">Totals</span>
+              <span className="tfg-identity__name tfg-identity__name--totals">Total</span>
             </span>
           </span>
         );
@@ -923,7 +942,7 @@ export function Grid(props: GridProps): React.ReactElement {
         role="grid"
         aria-label={GRID_LABEL}
         aria-rowcount={rows.length + 2}
-        aria-colcount={navigable.length}
+        aria-colcount={layout.filter((column) => column.kind !== 'spacer').length}
         aria-activedescendant={cellId(activeCell.row, activeCell.col)}
         tabIndex={0}
         onKeyDown={onKeyDown}

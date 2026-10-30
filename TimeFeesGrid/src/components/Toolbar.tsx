@@ -148,6 +148,7 @@ function infoLines(phasing: Phasing, holidayCount: number): string[] {
   }
   lines.push(
     'Arrow keys move and apply the value being typed · Enter or type to edit · Esc cancels · Tab commits and moves on · Del clears.',
+    'Ctrl+arrows jump to the edge of the table · add Shift to select up to it · Ctrl+C, Ctrl+X and Ctrl+V copy, cut and paste.',
     'Hours spread evenly over the working days of each period. Fee = hours × RPH. GM% is margin on cost.',
   );
   return lines;

@@ -7,7 +7,7 @@
     with colAllocatedHours as the editable bookings. The three collections are bound as datasets;
     the component publishes every change back to the app through the Changes / ChangesJson outputs.
   -->
-  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.9.0"
+  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.9.2"
            display-name-key="TimeFeesGrid_Display" description-key="TimeFeesGrid_Desc"
            control-type="virtual">
 
@@ -126,7 +126,7 @@
               of-type="Object" usage="output" hidden="false" default-value="" />
     <property name="changesJson" display-name-key="ChangesJson_Display" description-key="ChangesJson_Desc"
               of-type="SingleLine.Text" usage="output" />
-    <!-- Height the grid needs to show every row without scrolling; bind Height = Self.requiredHeight -->
+    <!-- Height the grid needs, up to five people (more rows scroll inside it); bind Height = Self.requiredHeight -->
     <property name="requiredHeight" display-name-key="RequiredHeight_Display" description-key="RequiredHeight_Desc"
               of-type="Whole.None" usage="output" />
 

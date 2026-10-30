@@ -88,7 +88,7 @@
   </data>
   <data name="RequiredHeight_Display" xml:space="preserve"><value>Required height</value></data>
   <data name="RequiredHeight_Desc" xml:space="preserve">
-    <value>The height in pixels the grid needs to show the header, every person and the totals row without scrolling. Set the control's Height to Self.requiredHeight. When only this value changes, Changes carries the action "heightChanged", which OnChange can ignore.</value>
+    <value>The height in pixels the grid needs to show the header, up to five people and the total row. With more than five people the height stops growing and the rows scroll inside the grid. Set the control's Height to Self.requiredHeight. When only this value changes, Changes carries the action "heightChanged", which OnChange can ignore.</value>
   </data>
   <data name="Holidays_Display" xml:space="preserve"><value>Public holidays</value></data>
   <data name="Holidays_Desc" xml:space="preserve">

@@ -4,7 +4,16 @@
  */
 import { describe, expect, it } from 'vitest';
 import { buildColumns } from '../TimeFeesGrid/src/engine';
-import { buildColumnLayout, CellKind, ColumnLayout, DENSITY, stickyLeftWidth, stickyRightWidth } from '../TimeFeesGrid/src/gridColumns';
+import {
+  buildColumnLayout,
+  CellKind,
+  ColumnLayout,
+  DENSITY,
+  isSelectableColumn,
+  jumpPosition,
+  stickyLeftWidth,
+  stickyRightWidth,
+} from '../TimeFeesGrid/src/gridColumns';
 import type { TimelineDay } from '../TimeFeesGrid/src/types';
 
 const HOURS_PER_DAY = 8;
@@ -57,6 +66,30 @@ describe('period columns', () => {
       '2026-01-12',
       '2026-01-13',
     ]);
+  });
+});
+
+describe('selectable columns and Ctrl jumps', () => {
+  it('keeps Hours, Fee, Fill and the gap out of selection', () => {
+    const kinds = buildColumnLayout(buildColumns(timeline(), 'weekly', HOURS_PER_DAY), 'comfortable')
+      .map((column) => column.kind)
+      .filter(isSelectableColumn);
+    expect(kinds).toEqual(['identity', 'rph', 'std', 'real', 'period', 'period', 'gm']);
+  });
+
+  it('stops at the first and last period, then goes on to the end of the row', () => {
+    const kinds: CellKind[] = ['identity', 'rph', 'period', 'period', 'period', 'gm'];
+    expect(jumpPosition(kinds, 3, 1)).toBe(4);
+    expect(jumpPosition(kinds, 3, -1)).toBe(2);
+    expect(jumpPosition(kinds, 0, 1)).toBe(4);
+    expect(jumpPosition(kinds, 5, -1)).toBe(2);
+    expect(jumpPosition(kinds, 4, 1)).toBe(5);
+    expect(jumpPosition(kinds, 2, -1)).toBe(0);
+  });
+
+  it('reaches the row ends when there is no timeline', () => {
+    expect(jumpPosition(['identity', 'rph'], 0, 1)).toBe(1);
+    expect(jumpPosition(['identity', 'rph'], 1, -1)).toBe(0);
   });
 });
 

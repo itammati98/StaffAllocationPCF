@@ -6,6 +6,7 @@
 import type { ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import { TimeFeesGrid } from '../TimeFeesGrid/index';
+import { MAX_VISIBLE_ROWS, requiredHeight } from '../TimeFeesGrid/src/components/TimeFeesGridApp';
 import { buildOutput, createStore } from '../TimeFeesGrid/src/engine';
 import { allocationsFromOutput, createFakeHost, peopleFromOutput } from '../dev/fakeHost';
 import type { FakeHost } from '../dev/fakeHost';
@@ -187,5 +188,25 @@ describe('component / required height', () => {
     expect(changes.revision).toBe(1);
     expect(changes.allocations).toEqual(payload.allocations);
     expect(component.getOutputs().requiredHeight).toBe(393);
+  });
+});
+
+describe('required height', () => {
+  const box = (height: number): { getBoundingClientRect: () => { height: number } } => ({ getBoundingClientRect: () => ({ height }) });
+
+  /** Toolbar 33, header 34, rows of 40, total row 30, and a 10px horizontal scrollbar. */
+  const root = (people: number): HTMLElement => {
+    const table = { ...box(34 + people * 40 + 30), tBodies: [{ rows: Array.from({ length: people }, () => box(40)) }] };
+    const wrap = { classList: { contains: (name: string) => name === 'tfg-gridwrap' }, querySelector: () => table, offsetHeight: 200, clientHeight: 190 };
+    const toolbar = { ...box(33), classList: { contains: () => false } };
+    return { children: [toolbar, wrap] } as unknown as HTMLElement;
+  };
+
+  it('grows with each person up to five, then stays the same so the rows scroll inside', () => {
+    expect(MAX_VISIBLE_ROWS).toBe(5);
+    expect(requiredHeight(root(1))).toBe(147);
+    expect(requiredHeight(root(5))).toBe(307);
+    expect(requiredHeight(root(6))).toBe(307);
+    expect(requiredHeight(root(30))).toBe(307);
   });
 });

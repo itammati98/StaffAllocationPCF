@@ -321,18 +321,22 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
 /** Room the "no timeline" and loading messages take when the grid has nothing else to show. */
 const PLACEHOLDER_HEIGHT = 80;
 
+/** People shown before the control stops growing and the rows scroll inside it. */
+export const MAX_VISIBLE_ROWS = 5;
+
 /**
- * Height in pixels the control needs so that nothing scrolls vertically: the toolbar and any
- * banners as drawn, plus the table's own height and the horizontal scrollbar under the timeline
- * when there is one. The table is measured rather than the area around it, so the answer does not
- * depend on how tall the control currently is.
+ * Height in pixels the control should have: the toolbar and any banners as drawn, plus the table's
+ * own height and the horizontal scrollbar under the timeline when there is one. Only the first
+ * `MAX_VISIBLE_ROWS` people count, so with more of them the height stops growing and the rows
+ * scroll between the pinned header and totals. The table is measured rather than the area around
+ * it, so the answer does not depend on how tall the control currently is.
  */
 export function requiredHeight(root: HTMLElement): number {
   let total = 0;
   for (const child of Array.from(root.children) as HTMLElement[]) {
     if (child.classList.contains('tfg-gridwrap')) {
       const table = child.querySelector('table');
-      total += (table ? table.getBoundingClientRect().height : 0) + (child.offsetHeight - child.clientHeight);
+      total += (table ? tableHeight(table) : 0) + (child.offsetHeight - child.clientHeight);
     } else if (child.classList.contains('tfg-placeholder')) {
       total += PLACEHOLDER_HEIGHT;
     } else {
@@ -340,4 +344,11 @@ export function requiredHeight(root: HTMLElement): number {
     }
   }
   return Math.ceil(total - 0.01);
+}
+
+/** The table's height without the rows past `MAX_VISIBLE_ROWS`. */
+function tableHeight(table: HTMLTableElement): number {
+  const rows = Array.from(table.tBodies[0]?.rows ?? []);
+  const hidden = rows.slice(MAX_VISIBLE_ROWS).reduce((sum, row) => sum + row.getBoundingClientRect().height, 0);
+  return table.getBoundingClientRect().height - hidden;
 }

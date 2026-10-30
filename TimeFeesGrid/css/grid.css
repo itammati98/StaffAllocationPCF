@@ -28,7 +28,7 @@
   --tfg-radius: 4px;
   --tfg-row-h: 40px;
   --tfg-head-h: 34px;
-  --tfg-foot-h: 34px;
+  --tfg-foot-h: 30px;
 
   display: flex;
   flex-direction: column;
@@ -738,6 +738,9 @@
 }
 
 .tfg-identity__name--totals {
+  font-size: 10px;
+  font-weight: 700;
+  color: #201f1e;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -892,10 +895,10 @@
   border-top: 1px solid var(--tfg-border-strong);
   border-right: 1px solid var(--tfg-border);
   font-weight: 700;
-  /* Same size as the body cells (the table sets 12px, 11px when narrow). */
-  font-size: inherit;
+  /* The same 30px, 10px bold #201F1E row as the app's own totals rows. */
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
-  color: var(--tfg-text);
+  color: #201f1e;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -908,6 +911,11 @@
 
 .tfg-tf--identity {
   padding: 0;
+}
+
+/* TOTAL starts 16px in, level with the TIME FEES title above it. */
+.tfg-tf--identity .tfg-identity {
+  padding-left: 16px;
 }
 
 .tfg-tf--identity .tfg-identity__text {

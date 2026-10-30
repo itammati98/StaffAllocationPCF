@@ -50,7 +50,7 @@ export const DENSITY: Record<Density, DensitySpec> = {
   comfortable: {
     rowHeight: 40,
     headerHeight: 34,
-    footerHeight: 34,
+    footerHeight: 30,
     widths: { identity: 264, rph: 76, std: 76, real: 76, fill: 40, period: 72, totalHours: 84, fee: 84, gm: 76 },
     stickyLeft: ['identity', 'rph', 'std', 'real', 'fill'],
     stickyRight: ['totalHours', 'fee', 'gm'],
@@ -58,7 +58,7 @@ export const DENSITY: Record<Density, DensitySpec> = {
   compact: {
     rowHeight: 36,
     headerHeight: 32,
-    footerHeight: 32,
+    footerHeight: 30,
     widths: { identity: 216, rph: 64, std: 64, real: 64, fill: 36, period: 60, totalHours: 72, fee: 72, gm: 72 },
     stickyLeft: ['identity', 'rph', 'std', 'real', 'fill'],
     stickyRight: ['totalHours', 'fee'],
@@ -158,6 +158,26 @@ export function buildColumnLayout(
   });
 
   return columns;
+}
+
+/**
+ * Whether a column's cells can be focused, selected and copied. The gap between timeline and totals
+ * and the Fill column are not cells, and the Hours and Fee columns are display-only.
+ */
+export function isSelectableColumn(kind: CellKind): boolean {
+  return kind !== 'spacer' && kind !== 'fill' && kind !== 'totalHours' && kind !== 'fee';
+}
+
+/**
+ * Where Ctrl+Left / Ctrl+Right lands, as a position in `kinds` (the selectable columns in order).
+ * The first stop is the edge of the timeline, so one press reaches the first or last period from
+ * anywhere inside it; pressing again from that edge goes on to the end of the row.
+ */
+export function jumpPosition(kinds: readonly CellKind[], position: number, direction: 1 | -1): number {
+  const first = kinds.indexOf('period');
+  const last = kinds.lastIndexOf('period');
+  if (direction > 0) return first >= 0 && position < last ? last : kinds.length - 1;
+  return first >= 0 && position > first ? first : 0;
 }
 
 /** Sum of the widths of every sticky-left column; the visible area starts after it. */
