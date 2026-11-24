@@ -50,6 +50,8 @@ interface GridProps {
   pricingMethod: PricingMethod;
   /** True while the toolbar's outside-the-window chip filters the rows: their Hours cells are flagged. */
   highlightOutside: boolean;
+  /** False leaves each person's GM% blank; the total row keeps the overall GM%. */
+  showPersonMargin: boolean;
   onSetHours: (rowKey: string, column: PeriodColumn, hours: number) => void;
   onSetRate: (rowKey: string, field: 'rph' | 'realisation', value: number) => void;
   onFillRight: (rowKey: string) => void;
@@ -83,6 +85,7 @@ export function Grid(props: GridProps): React.ReactElement {
     readOnly,
     pricingMethod,
     highlightOutside,
+    showPersonMargin,
     onSetHours,
     onSetRate,
     onFillRight,
@@ -841,7 +844,7 @@ export function Grid(props: GridProps): React.ReactElement {
       );
     }
 
-    const numeric = periodValueFor(row, column);
+    const numeric = periodValueFor(row, column, showPersonMargin);
     const editable = isNumberCell(row, column);
     const outside = column.kind === 'totalHours' && row.outsideWindowHours > 0;
     return (
@@ -1019,7 +1022,7 @@ function jobLevelLine(row: GridRow): string {
   return parts.length > 0 ? parts.join(' \u00b7 ') : 'No job level';
 }
 
-function periodValueFor(row: GridRow, column: ColumnLayout): string {
+function periodValueFor(row: GridRow, column: ColumnLayout, showPersonMargin: boolean): string {
   switch (column.kind) {
     case 'rph':
       return formatRate(row.person.rph);
@@ -1032,7 +1035,7 @@ function periodValueFor(row: GridRow, column: ColumnLayout): string {
     case 'fee':
       return formatThousands(row.fee);
     case 'gm':
-      return formatPercent(row.gm);
+      return showPersonMargin ? formatPercent(row.gm) : '';
     default:
       return '';
   }

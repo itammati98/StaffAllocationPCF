@@ -114,7 +114,7 @@ export interface GridRow {
   fee: number;
   /** totalHours * costRate. */
   cost: number;
-  /** (fee - cost) / cost, i.e. margin on cost. 0 when cost is 0. */
+  /** Gross margin: (fee - cost) / fee. 0 when the fee is 0. */
   gm: number;
   /** rph / feeRate. 0 when feeRate is 0. */
   realisation: number;
@@ -163,6 +163,8 @@ export interface GridHostInputs {
   showNotifications: boolean;
   /** False hides the chip that names the pricing mode the app set. */
   showPricingBadge: boolean;
+  /** False leaves each person's GM% blank; the total row still shows the overall GM%. */
+  showPersonMargin: boolean;
   /** Public holidays (`YYYY-MM-DD`) the app lists; they are never working days. */
   holidays: string[];
   /** Studio-configured palette, applied to the grid root as CSS custom properties. */

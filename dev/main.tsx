@@ -19,6 +19,7 @@ function Harness(): React.ReactElement {
   const [readOnly, setReadOnly] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(true);
   const [showPricingBadge, setShowPricingBadge] = React.useState(true);
+  const [showPersonMargin, setShowPersonMargin] = React.useState(true);
   const [pricingMethod, setPricingMethod] = React.useState<PricingMethod>('manualRate');
   const [colors, setColors] = React.useState<GridColors>(DEFAULT_COLORS);
   const [output, setOutput] = React.useState<GridOutput | null>(null);
@@ -30,8 +31,8 @@ function Harness(): React.ReactElement {
   const added = React.useRef(0);
 
   const host = React.useMemo<GridHostInputs>(
-    () => ({ ...mockHostInputs, readOnly, showNotifications, showPricingBadge, pricingMethod, colors }),
-    [readOnly, showNotifications, showPricingBadge, pricingMethod, colors],
+    () => ({ ...mockHostInputs, readOnly, showNotifications, showPricingBadge, showPersonMargin, pricingMethod, colors }),
+    [readOnly, showNotifications, showPricingBadge, showPersonMargin, pricingMethod, colors],
   );
 
   const fakeHost = React.useMemo(
@@ -118,6 +119,9 @@ function Harness(): React.ReactElement {
           </label>
           <label>
             <input type="checkbox" checked={showPricingBadge} onChange={(event) => setShowPricingBadge(event.target.checked)} /> Pricing badge
+          </label>
+          <label>
+            <input type="checkbox" checked={showPersonMargin} onChange={(event) => setShowPersonMargin(event.target.checked)} /> GM% per person
           </label>
           <label>
             Pricing

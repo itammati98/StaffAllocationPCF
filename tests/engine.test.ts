@@ -281,7 +281,8 @@ describe('7. computeModel', () => {
     expect(row1.totalHours).toBe(45);
     expect(row1.fee).toBe(8550);
     expect(row1.cost).toBe(2475);
-    expect(row1.gm).toBeCloseTo((8550 - 2475) / 2475, 6);
+    // Gross margin is taken on the fee, not on the cost.
+    expect(row1.gm).toBeCloseTo((8550 - 2475) / 8550, 6);
     expect(row1.realisation).toBe(1);
     expect(row1.outsideWindowHours).toBe(8);
     expect(row2.totalHours).toBe(40);
@@ -293,6 +294,8 @@ describe('7. computeModel', () => {
     expect(model.totals.hours[weekly[1].id]).toBe(40);
     expect(model.totals.hoursTotal).toBe(85);
     expect(model.totals.fee).toBe(16150);
+    const cost = model.rows.reduce((sum, row) => sum + row.cost, 0);
+    expect(model.totals.gm).toBeCloseTo((16150 - cost) / 16150, 6);
     expect(model.outsideWindowHours).toBe(8);
   });
 });

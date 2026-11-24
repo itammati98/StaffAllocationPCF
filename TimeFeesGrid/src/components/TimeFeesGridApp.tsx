@@ -306,6 +306,7 @@ export function TimeFeesGridApp(props: TimeFeesGridAppProps): React.ReactElement
           readOnly={readOnly}
           pricingMethod={host.pricingMethod}
           highlightOutside={filterOn}
+          showPersonMargin={host.showPersonMargin}
           onSetHours={handleSetHours}
           onSetRate={handleSetRate}
           onFillRight={handleFillRight}

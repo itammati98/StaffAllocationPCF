@@ -198,5 +198,5 @@ const FIXED_COLUMNS: Record<Exclude<CellKind, 'period' | 'spacer'>, { label: str
   fill: { label: 'Fill', title: 'Fill the row: copy the first period that has hours into every following period' },
   totalHours: { label: 'Hours', title: 'Hours booked in this workstream window' },
   fee: { label: 'Fee (k)', title: 'Time fees in thousands: booked hours times RPH' },
-  gm: { label: 'GM%', title: 'Gross margin on cost: (time fees - cost) / cost' },
+  gm: { label: 'GM%', title: 'Gross margin: (time fees - cost) / time fees' },
 };

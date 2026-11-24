@@ -7,7 +7,7 @@
     with colAllocatedHours as the editable bookings. The three collections are bound as datasets;
     the component publishes every change back to the app through the Changes / ChangesJson outputs.
   -->
-  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.9.3"
+  <control namespace="PeopleAllocation" constructor="TimeFeesGrid" version="1.9.4"
            display-name-key="TimeFeesGrid_Display" description-key="TimeFeesGrid_Desc"
            control-type="virtual">
 
@@ -83,6 +83,8 @@
     <property name="showNotifications" display-name-key="ShowNotifications_Display" description-key="ShowNotifications_Desc"
               of-type="TwoOptions" usage="input" default-value="true" />
     <property name="showPricingBadge" display-name-key="ShowPricingBadge_Display" description-key="ShowPricingBadge_Desc"
+              of-type="TwoOptions" usage="input" default-value="true" />
+    <property name="showPersonMargin" display-name-key="ShowPersonMargin_Display" description-key="ShowPersonMargin_Desc"
               of-type="TwoOptions" usage="input" default-value="true" />
 
     <!-- Colours. Every value is a CSS colour the maker can paste in the property pane: #rgb, #rrggbb

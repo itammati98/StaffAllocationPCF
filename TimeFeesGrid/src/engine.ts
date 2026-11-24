@@ -452,7 +452,8 @@ export function computeModel(
     totalHours = round6(totalHours);
     const fee = round6(totalHours * person.rph);
     const cost = round6(totalHours * person.costRate);
-    const gm = cost > 0 ? (fee - cost) / cost : 0;
+    // Gross margin on fees: what is left of the fee once the cost is paid.
+    const gm = fee > 0 ? (fee - cost) / fee : 0;
     const realisation = realisationFromRph(person.rph, person.feeRate);
 
     rows.push({
@@ -496,7 +497,7 @@ export function computeModel(
     hours: totalsHours,
     hoursTotal,
     fee: round6(feeTotal),
-    gm: costTotal > 0 ? (feeTotal - costTotal) / costTotal : 0,
+    gm: feeTotal > 0 ? (feeTotal - costTotal) / feeTotal : 0,
     avgRph: hoursTotal > 0 ? round6(weightedRph / hoursTotal) : 0,
     avgStd: hoursTotal > 0 ? round6(weightedStd / hoursTotal) : 0,
     avgRealisation: 0,

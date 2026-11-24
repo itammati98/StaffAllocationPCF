@@ -303,6 +303,10 @@ export class TimeFeesGrid implements ComponentFramework.ReactControl<IInputs, IO
       showPricingBadge: parameters.showPricingBadge?.raw === undefined || parameters.showPricingBadge?.raw === null
         ? true
         : readBoolean(parameters.showPricingBadge.raw),
+      // Each person's GM% is shown unless the app turns it off.
+      showPersonMargin: parameters.showPersonMargin?.raw === undefined || parameters.showPersonMargin?.raw === null
+        ? true
+        : readBoolean(parameters.showPersonMargin.raw),
       holidays: this.readHolidays((parameters as unknown as Record<string, { raw?: unknown } | undefined>).holidays?.raw),
       colors: this.colors,
     };
